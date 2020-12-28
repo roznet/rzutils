@@ -29,7 +29,7 @@
 #else
 #import <Cocoa/Cocoa.h>
 #endif
-@import RZUtilsCore;
+@import RZUtils;
 
 @interface GCViewGradientColors : NSObject
 

@@ -7,7 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
-@import RZUtilsCore;
+@import RZUtils;
 
 @interface RZUtilsTestsDataPivot : XCTestCase
 

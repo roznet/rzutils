@@ -7,7 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
-@import RZUtilsCore;
+@import RZUtils;
 @import RZUtilsUniversal;
 
 @interface RZUtilsTestsTimeStamps : XCTestCase

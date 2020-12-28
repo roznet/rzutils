@@ -23,7 +23,7 @@
 //  SOFTWARE.
 //  
 
-@import RZUtilsCore;
+@import RZUtils;
 #import "GCSimpleGraphGeometry.h"
 #import "RZViewConfig.h"
 

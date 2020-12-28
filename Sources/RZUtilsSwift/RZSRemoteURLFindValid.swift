@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import RZUtilsCore
+import RZUtils
 
 public typealias RZRemoteDownloadCompleteHandler = (String?) -> ();
 

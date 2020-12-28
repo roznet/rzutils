@@ -25,7 +25,7 @@
 
 
 #import "GCSimpleGraphCachedDataSource.h"
-@import RZUtilsCore;
+@import RZUtils;
 
 @implementation GCSimpleGraphDataHolder;
 @synthesize dataSerie,graphType,color,yUnit,lineWidth,gradientColors,gradientFunction,gradientDataSerie,range,currentPoint,highlightCurrent,legend;

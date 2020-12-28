@@ -30,7 +30,7 @@
 #endif
 
 #import "GCViewGradientColors.h"
-@import RZUtilsCore;
+@import RZUtils;
 
 typedef NS_ENUM(NSUInteger, gcGraphType) {
     gcGraphLine,

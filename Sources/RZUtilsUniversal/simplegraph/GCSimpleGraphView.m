@@ -26,7 +26,7 @@
 #import "GCSimpleGraphView.h"
 #import "RZViewConfig.h"
 #import "RZLog.h"
-@import RZUtilsCore;
+@import RZUtils;
 
 #if TARGET_OS_IPHONE
 #define UIGRAPHICCURRENTCONTEXT() UIGraphicsGetCurrentContext()

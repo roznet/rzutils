@@ -24,7 +24,7 @@
 //  
 
 #import "GCViewGradientColors.h"
-@import RZUtilsCore;
+@import RZUtils;
 
 @implementation GCViewGradientColors
 

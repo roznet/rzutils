@@ -1,5 +1,5 @@
 import XCTest
-@testable import RZUtilsCore
+@testable import RZUtils
 
 final class RZUtilsTests: XCTestCase {
     func testExample() {

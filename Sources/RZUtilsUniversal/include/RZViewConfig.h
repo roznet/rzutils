@@ -32,7 +32,7 @@
 @import Cocoa;
 #endif
 
-@import RZUtilsCore;
+@import RZUtils;
 
 typedef NS_ENUM(NSUInteger, gcFontStyle){
     gcFontStyleDynamicType,

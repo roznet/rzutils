@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import RZUtilsCore
+import RZUtils
 
 #if os(iOS)
     import UIKit

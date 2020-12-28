@@ -7,7 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
-@import RZUtilsCore;
+@import RZUtils;
 #import "RZUtilsTestsSamples.h"
 
 #define EPS 1e-10

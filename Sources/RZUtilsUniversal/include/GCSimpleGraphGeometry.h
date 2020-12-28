@@ -29,7 +29,7 @@
 #else
 #import <Cocoa/Cocoa.h>
 #endif
-@import RZUtilsCore;
+@import RZUtils;
 #import "GCSimpleGraphProtocol.h"
 
 @interface GCAxisKnob : NSObject

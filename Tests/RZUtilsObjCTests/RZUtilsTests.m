@@ -7,7 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
-@import RZUtilsCore;
+@import RZUtils;
 
 @interface NSNumber (GCTestsCategory)
 -(NSNumber*)divideTwo;
