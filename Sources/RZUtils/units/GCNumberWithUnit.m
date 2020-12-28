@@ -180,6 +180,9 @@
     return [_unit formatDoubleNoUnits:_value];
 }
 
+-(NSArray<NSString*>*)formatComponents{
+    return [_unit formatComponentsForDouble:_value];
+}
 #pragma mark - Operations
 
 -(nullable GCNumberWithUnit*)numberWithUnitMultipliedBy:(double)multiplier{

@@ -32,7 +32,7 @@ let package = Package(
             dependencies: ["RZUtils"]),
         .testTarget(
             name: "RZUtilsTests",
-            dependencies: ["RZUtils"]),
+            dependencies: ["RZUtilsSwift", "RZUtils"]),
         .testTarget(
             name: "RZUtilsObjCTests",
             dependencies: ["RZUtils", "RZUtilsUniversal"]),

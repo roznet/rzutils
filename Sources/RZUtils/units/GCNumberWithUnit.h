@@ -46,6 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(NSString*)formatDouble;
 -(NSString*)formatDoubleNoUnits;
+-(NSArray<NSString*>*)formatComponents;
 
 -(NSAttributedString*)attributedStringWithValueAttr:(NSDictionary*)vAttr andUnitAttr:(nullable NSDictionary*)uAttr;
 
