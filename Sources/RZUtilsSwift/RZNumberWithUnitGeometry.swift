@@ -35,9 +35,14 @@ extension CGSize {
     
     public enum UnitPosition {
         case aligned
-        case withNumber
+        case trailingNumber
     }
     
+    public enum TimeAlignment {
+        case withNumber
+        case withUnit
+    }
+        
     /// the maximum size of all unit formated
     var unitSize : CGSize = CGSize.zero
     /// the maximum size of all the full numbers
@@ -56,7 +61,8 @@ extension CGSize {
     
     public var alignDecimalPart : Bool = true
     public var alignment : Alignment = .left
-    public var unitPosition : UnitPosition = .withNumber
+    public var unitPosition : UnitPosition = .trailingNumber
+    public var timeAlignment : TimeAlignment = .withNumber
     
     var count : UInt = 0
     
@@ -184,19 +190,20 @@ extension CGSize {
             break
         }
         
-        if( hasUnit ){
-            unitPoint.x += numberSize.width + self.spacingSize.width
-            numberPoint.x += (numberSize.width - currentNumberSize.width)
-        }else{
-            numberPoint.x += (numberSize.width - currentNumberSize.width)
-            // Alternative align for no unit?
-            if case UnitPosition.aligned = self.unitPosition {
-                numberPoint.x += (totalSize.width - currentNumberSize.width - (unitSize.width/2.0));
+        unitPoint.x += numberSize.width + self.spacingSize.width
+        numberPoint.x += (numberSize.width - currentNumberSize.width)
+        
+        if !hasUnit && numberWithUnit.unit.format == gcUnitFormat.time {
+            if case TimeAlignment.withUnit = self.timeAlignment {
+                numberPoint.x += unitSize.width
             }
         }
+        
         if alignDecimalPart {
             numberPoint.x -= (decimalPartSize.width - currentDecimalPartSize.width)
-            unitPoint.x -= (decimalPartSize.width - currentDecimalPartSize.width)
+            if case UnitPosition.trailingNumber = unitPosition {
+                unitPoint.x -= (decimalPartSize.width - currentDecimalPartSize.width)
+            }
         }
         
         (fmtNoUnit as NSString).draw(at: numberPoint, withAttributes: numberAttribute)

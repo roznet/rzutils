@@ -35,7 +35,7 @@
 NSMutableDictionary * _unitsRegistry = nil;
 NSDictionary * _unitsMetrics = nil;
 NSDictionary * _unitsImperial = nil;
-gcUnitSystem globalSystem = GCUnitSystemDefault;
+gcUnitSystem globalSystem = gcUnitSystemDefault;
 GCUnitStrideStyle _strideStyle = GCUnitStrideSameFoot;
 
 //1.6093440
@@ -78,65 +78,65 @@ void buildUnitSystemCache(){
 
 void registerDouble( NSArray * defs){
     GCUnit * unit = RZReturnAutorelease([[GCUnit alloc] initWithArray:defs]);
-    unit.format = GCUnitDoubleFormat;
+    unit.format = gcUnitFormatDouble;
     _unitsRegistry[defs[0]] = unit;
 }
 
 
 void registerSimple( NSArray * defs){
     GCUnit * unit = RZReturnAutorelease([[GCUnit alloc] initWithArray:defs]);
-    unit.format = GCunitDoubleTwoDigitFormat;
+    unit.format = gcUnitFormatTwoDigit;
     unit.referenceUnitKey = unit.key;  // make sure can convert to itself...
     _unitsRegistry[defs[0]] = unit;
 }
 
 void registerSimpl0( NSArray * defs){
     GCUnit * unit = RZReturnAutorelease([[GCUnit alloc] initWithArray:defs]);
-    unit.format = GCUnitIntegerFormat;
+    unit.format = gcUnitFormatInteger;
     unit.referenceUnitKey = unit.key;  // make sure can convert to itself...
     _unitsRegistry[defs[0]] = unit;
 }
 
 void registerSimpl1( NSArray * defs){
     GCUnit * unit = RZReturnAutorelease([[GCUnit alloc] initWithArray:defs]);
-    unit.format = GCUnitDoubleOneDigitFormat;
+    unit.format = gcUnitFormatOneDigit;
     unit.referenceUnitKey = unit.key;  // make sure can convert to itself...
     _unitsRegistry[defs[0]] = unit;
 }
 void registerSimpl3( NSArray * defs){
     GCUnit * unit = RZReturnAutorelease([[GCUnit alloc] initWithArray:defs]);
-    unit.format = GCunitDoubleThreeDigitFormat;
+    unit.format = gcUnitFormatThreeDigit;
     unit.referenceUnitKey = unit.key;  // make sure can convert to itself...
     _unitsRegistry[defs[0]] = unit;
 }
 
 void registerLinear( NSArray * defs, NSString * ref, double m, double o){
     GCUnitLinear * unit = [GCUnitLinear unitLinearWithArray:defs reference:ref multiplier:m andOffset:o];
-    unit.format = GCunitDoubleTwoDigitFormat;
+    unit.format = gcUnitFormatTwoDigit;
     _unitsRegistry[defs[0]] = unit;
 }
 
 void registerLinea1( NSArray * defs, NSString * ref, double m, double o){
     GCUnitLinear * unit = [GCUnitLinear unitLinearWithArray:defs reference:ref multiplier:m andOffset:o];
-    unit.format = GCUnitDoubleOneDigitFormat;
+    unit.format = gcUnitFormatOneDigit;
     _unitsRegistry[defs[0]] = unit;
 }
 
 void registerLinea0( NSArray * defs, NSString * ref, double m, double o){
     GCUnitLinear * unit = [GCUnitLinear unitLinearWithArray:defs reference:ref multiplier:m andOffset:o];
-    unit.format = GCUnitIntegerFormat;
+    unit.format = gcUnitFormatInteger;
     _unitsRegistry[defs[0]] = unit;
 }
 
 void registerLinTim( NSArray * defs, NSString * ref, double m, double o){
     GCUnitLinear * unit = [GCUnitLinear unitLinearWithArray:defs reference:ref multiplier:m andOffset:o];
-    unit.format = GCUnitTimeFormat;
+    unit.format = gcUnitFormatTime;
     _unitsRegistry[defs[0]] = unit;
 }
 
 void registerInvLin( NSArray * defs, NSString * ref, double m, double o){
     GCUnitInverseLinear * unit = [GCUnitInverseLinear unitInverseLinearWithArray:defs reference:ref multiplier:m andOffset:o];
-    unit.format = GCUnitTimeFormat;
+    unit.format = gcUnitFormatTime;
     _unitsRegistry[defs[0]] = unit;
 }
 void registerDaCa( NSString * name, NSDateFormatterStyle dateStyle, NSDateFormatterStyle timeStyle, NSString * fmt, NSCalendarUnit cal){
@@ -406,13 +406,13 @@ void registerUnits(){
         self.axisBase = 1.;
         if (aArray.count > 3) {
             self.fractionUnit = [GCUnit unitForKey:aArray[3]];
-            _format = GCUnitTimeFormat;
+            _format = gcUnitFormatTime;
         }else{
             _fractionUnit = nil;
         }
         if (aArray.count > 4) {
             self.compoundUnit = [GCUnit unitForKey:aArray[4]];
-            _format = GCUnitTimeFormat;
+            _format = gcUnitFormatTime;
         }else{
             _compoundUnit = nil;
         }
@@ -698,25 +698,25 @@ void registerUnits(){
     NSString * fmt = nil;
     //isTimeFormat ? @"%02.0f" : @"%.2f";
     switch (_format) {
-        case GCUnitDoubleOneDigitFormat:
+        case gcUnitFormatOneDigit:
             fmt = @"%.1f";
             break;
-        case GCunitDoubleThreeDigitFormat:
+        case gcUnitFormatThreeDigit:
             fmt = @"%.3f";
             break;
-        case GCunitDoubleTwoDigitFormat:
+        case gcUnitFormatTwoDigit:
             fmt = @"%.2f";
             if (log10(toFormat)>=1.1) {
                 fmt = @"%.1f";
             }
             break;
-        case GCUnitIntegerFormat:
+        case gcUnitFormatInteger:
             fmt = @"%.0f";
             break;
-        case GCUnitTimeFormat:
+        case gcUnitFormatTime:
             fmt = @"%02.0f";
             break;
-        case GCUnitDoubleFormat:
+        case gcUnitFormatDouble:
             fmt = @"%f";
             break;
     }
@@ -732,7 +732,7 @@ void registerUnits(){
     if (_fractionUnit) {
         toFormat = floor(toFormat);
         fraction = aDbl-toFormat;
-        if (_format == GCUnitTimeFormat) {
+        if (_format == gcUnitFormatTime) {
             fmt = @"%02.0f";
         }else{
             fmt = @"%.0f";
@@ -769,7 +769,7 @@ void registerUnits(){
     NSMutableArray * rv = [NSMutableArray arrayWithObject:rv_val];
 
     if (_fractionUnit) {
-        if (_format == GCUnitTimeFormat) {
+        if (_format == gcUnitFormatTime) {
             [rv_val appendString:@":"];
             [rv_val appendString:fractComponents[0]];
             if (_abbr.length > 0) {
@@ -831,10 +831,10 @@ void registerUnits(){
     }
     NSString * converted = nil;
     switch (system) {
-        case GCUnitSystemImperial:
+        case gcUnitSystemImperial:
             converted = _unitsImperial[_key];
             break;
-        case GCUnitSystemMetric:
+        case gcUnitSystemMetric:
             converted = _unitsMetrics[_key];
             break;
         default:
@@ -851,11 +851,11 @@ void registerUnits(){
     // Dictionary are equivalent unit, so if exist it means it's the
     // other system..
     if (_unitsImperial[_key] ) {
-        return GCUnitSystemMetric;
+        return gcUnitSystemMetric;
     }else if (_unitsMetrics[_key]){
-        return GCUnitSystemImperial;
+        return gcUnitSystemImperial;
     }else{
-        return GCUnitSystemDefault;
+        return gcUnitSystemDefault;
     }
 }
 

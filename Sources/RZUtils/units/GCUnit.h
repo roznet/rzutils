@@ -26,20 +26,20 @@
 @import Foundation;
 #import "RZMacros.h"
 
-typedef NS_ENUM(NSUInteger, GCUnitNumberFormat) {
-    GCUnitTimeFormat,
-    GCUnitIntegerFormat,
-    GCUnitDoubleOneDigitFormat,
-    GCunitDoubleTwoDigitFormat,
-    GCunitDoubleThreeDigitFormat,
-    GCUnitDoubleFormat,
+typedef NS_ENUM(NSUInteger, gcUnitFormat) {
+    gcUnitFormatTime,
+    gcUnitFormatInteger,
+    gcUnitFormatOneDigit,
+    gcUnitFormatTwoDigit,
+    gcUnitFormatThreeDigit,
+    gcUnitFormatDouble,
 };
 
 typedef NS_ENUM(NSUInteger, gcUnitSystem) {
-    GCUnitSystemDefault,
-    GCUnitSystemMetric,
-    GCUnitSystemImperial,
-    GCUnitSystemEnd
+    gcUnitSystemDefault,
+    gcUnitSystemMetric,
+    gcUnitSystemImperial,
+    gcUnitSystemEnd
 };
 
 
@@ -65,7 +65,7 @@ NS_ASSUME_NONNULL_BEGIN;
 @property (nonatomic,readonly,nullable) GCUnit * referenceUnit;
 @property (nonatomic,retain,nullable) GCUnit * fractionUnit;
 @property (nonatomic,retain,nullable) GCUnit * compoundUnit;
-@property (nonatomic,assign) GCUnitNumberFormat format;
+@property (nonatomic,assign) gcUnitFormat format;
 @property (nonatomic,assign) double scaling;
 @property (nonatomic,assign) BOOL enableNumberAbbreviation;
 @property (nonatomic,assign) double axisBase;

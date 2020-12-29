@@ -46,18 +46,18 @@
     for (NSUInteger i = 0; i<[metric count]; i+=2) {
         GCUnit * me = [metric objectAtIndex:i];
         GCUnit * im = [metric objectAtIndex:i+1];
-        XCTAssertEqualObjects(me, [im unitForSystem:GCUnitSystemMetric],   @"%@-%@ metric/imperial",[me key],[im key]);
-        XCTAssertEqualObjects(me, [me unitForSystem:GCUnitSystemMetric],   @"%@-%@ metric/imperial",[me key],[im key]);
-        XCTAssertEqualObjects(me, [me unitForSystem:GCUnitSystemDefault],  @"%@-%@ metric/imperial",[me key],[im key]);
+        XCTAssertEqualObjects(me, [im unitForSystem:gcUnitSystemMetric],   @"%@-%@ metric/imperial",[me key],[im key]);
+        XCTAssertEqualObjects(me, [me unitForSystem:gcUnitSystemMetric],   @"%@-%@ metric/imperial",[me key],[im key]);
+        XCTAssertEqualObjects(me, [me unitForSystem:gcUnitSystemDefault],  @"%@-%@ metric/imperial",[me key],[im key]);
         
-        XCTAssertEqualObjects(im, [im unitForSystem:GCUnitSystemImperial], @"%@-%@ metric/imperial",[me key],[im key]);
+        XCTAssertEqualObjects(im, [im unitForSystem:gcUnitSystemImperial], @"%@-%@ metric/imperial",[me key],[im key]);
         if (im != feet) {// because meters -> yard or foot is ambiguous
-            XCTAssertEqualObjects(im, [me unitForSystem:GCUnitSystemImperial], @"%@-%@ metric/imperial",[me key],[im key]);
+            XCTAssertEqualObjects(im, [me unitForSystem:gcUnitSystemImperial], @"%@-%@ metric/imperial",[me key],[im key]);
         }
-        XCTAssertEqualObjects(im, [im unitForSystem:GCUnitSystemDefault],  @"%@-%@ metric/imperial",[me key],[im key]);
+        XCTAssertEqualObjects(im, [im unitForSystem:gcUnitSystemDefault],  @"%@-%@ metric/imperial",[me key],[im key]);
     }
-    XCTAssertEqual([meters system], GCUnitSystemMetric);
-    XCTAssertEqual([yard system], GCUnitSystemImperial);
+    XCTAssertEqual([meters system], gcUnitSystemMetric);
+    XCTAssertEqual([yard system], gcUnitSystemImperial);
 }
 
 -(void)testLogScaleUnits{
