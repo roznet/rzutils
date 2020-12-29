@@ -27,17 +27,39 @@ extension CGSize {
 }
 @objc public class RZNumberWithUnitGeometry : NSObject {
     
+    public enum Alignment {
+        case left
+        case right
+        case center
+    }
+    
+    public enum UnitPosition {
+        case aligned
+        case withNumber
+    }
+    
+    /// the maximum size of all unit formated
     var unitSize : CGSize = CGSize.zero
+    /// the maximum size of all the full numbers
     var numberSize : CGSize = CGSize.zero
+    /// the maximum size of all the whole part of all numbers
     var decimalPartSize : CGSize = CGSize.zero
+    /// the maximum size of spacing of number, typically size of a space
+    var spacingSize : CGSize = CGSize.zero
+    /// the maximum size of all the numbers, spacing and units
     public var totalSize : CGSize = CGSize.zero
+    /// the accumulated size of all the numbers, spacing and units
+    public var accumulatedTotalSize : CGSize = CGSize.zero
     
-    var defaultNumberAttribute : [NSAttributedString.Key:Any] = [:]
-    var defaultUnitAttribute : [NSAttributedString.Key:Any] = [:]
+    public var defaultNumberAttribute : [NSAttributedString.Key:Any] = [:]
+    public var defaultUnitAttribute : [NSAttributedString.Key:Any] = [:]
     
-    var defaultSpacing : CGFloat = 0.0
-    var adjustDecimalPart : Bool = true
+    public var alignDecimalPart : Bool = true
+    public var alignment : Alignment = .left
+    public var unitPosition : UnitPosition = .withNumber
+    
     var count : UInt = 0
+    
     let decimalSeparatorSet : CharacterSet
 
     @objc public override init() {
@@ -53,21 +75,22 @@ extension CGSize {
         return RZNumberWithUnitGeometry()
     }
     
-    
     @objc public func reset() {
         self.unitSize = CGSize.zero
         self.numberSize = CGSize.zero
+        self.spacingSize = CGSize.zero
         self.totalSize = CGSize.zero
+        self.accumulatedTotalSize = CGSize.zero
         self.count = 0
-        
     }
     
     @objc public func adjust(for numberWithUnit: GCNumberWithUnit,
-                       numberAttribute : [NSAttributedString.Key:Any]? = nil,
-                       unitAttribute : [NSAttributedString.Key:Any]? = nil){
+                             numberAttribute : [NSAttributedString.Key:Any]? = nil,
+                             unitAttribute : [NSAttributedString.Key:Any]? = nil){
         
         let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
         let numberAttribute = numberAttribute ?? self.defaultNumberAttribute
+        
         
         let components = numberWithUnit.formatComponents()
         guard let fmtNoUnit = components.first else {
@@ -86,22 +109,26 @@ extension CGSize {
         }
         
         let numberSize = (fmtNoUnit as NSString).size(withAttributes: numberAttribute)
+        var totalSize = numberSize
         self.numberSize.max(with: numberSize)
-
+        
         if( hasUnit ){
+            let spacingSize = (" " as NSString).size(withAttributes: numberAttribute )
+            self.spacingSize.max(with: spacingSize)
+            
             let unitSize   = (fmtUnit as NSString).size(withAttributes: unitAttribute)
             self.unitSize.max(with: unitSize)
-            self.totalSize.height += max(unitSize.height, numberSize.height)
-        }else{
-            self.totalSize.height += numberSize.height
+            
+            totalSize.width += (spacingSize.width+unitSize.width)
+            totalSize.height = max(totalSize.height, spacingSize.height, unitSize.height)
         }
-        self.totalSize.width = self.unitSize.width+self.numberSize.width+self.spacing(numberAttribute: numberAttribute)
+        
+        self.totalSize.max(with: totalSize)
+        
+        self.accumulatedTotalSize.height += totalSize.height
+        self.accumulatedTotalSize.width = max( self.accumulatedTotalSize.width, totalSize.width)
+        
         self.count += 1
-    }
-    
-    func spacing(numberAttribute : [NSAttributedString.Key:Any]? = nil) -> CGFloat {
-        let oneSize = (" " as NSString).size(withAttributes: numberAttribute ?? self.defaultNumberAttribute )
-        return max(oneSize.width, self.defaultSpacing)
     }
     
     public func drawInRect(_ rect : CGRect,
@@ -144,19 +171,33 @@ extension CGSize {
         //      23.2  km
         //     169    km
         //      15:05 min/km
+
+        let overflow = rect.size.width - self.totalSize.width
+        switch alignment {
+        case .right:
+            unitPoint.x += overflow
+            numberPoint.x += overflow
+        case .center:
+            unitPoint.x += overflow/2.0
+            numberPoint.x += overflow/2.0
+        case .left:
+            break
+        }
         
         if( hasUnit ){
-            unitPoint.x += numberSize.width + self.spacing(numberAttribute: numberAttribute)
+            unitPoint.x += numberSize.width + self.spacingSize.width
             numberPoint.x += (numberSize.width - currentNumberSize.width)
         }else{
             numberPoint.x += (numberSize.width - currentNumberSize.width)
             // Alternative align for no unit?
-            //numberPoint.x += (totalSize.width - currentNumberSize.width - (unitSize.width/2.0));
+            if case UnitPosition.aligned = self.unitPosition {
+                numberPoint.x += (totalSize.width - currentNumberSize.width - (unitSize.width/2.0));
+            }
         }
-        if adjustDecimalPart {
+        if alignDecimalPart {
             numberPoint.x -= (decimalPartSize.width - currentDecimalPartSize.width)
+            unitPoint.x -= (decimalPartSize.width - currentDecimalPartSize.width)
         }
-        
         
         (fmtNoUnit as NSString).draw(at: numberPoint, withAttributes: numberAttribute)
         if( hasUnit && addUnit ){

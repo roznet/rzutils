@@ -264,9 +264,9 @@ void registerUnits(){
         registerLinTim( @[ @"hour",   @"Hours",       @"",    @"minute"], @"second", 3600.,    0.);
 
         //speed
-        registerLinea1( @[ @"mps",        @"Meters per Second",   @"mps"  ],                 @"mps", 1.0,                 0.);
-        registerLinea1( @[ @"kph",        @"Kilometers per Hour", @"km/h" ],                 @"mps", 1000./3600.,         0.);
-        registerLinea1( @[ @"mph",        @"Miles per Hour",      @"mph"  ],                 @"mps", GCUNIT_MILES/3600.,  0.);
+        registerLinear( @[ @"mps",        @"Meters per Second",   @"mps"  ],                 @"mps", 1.0,                 0.);
+        registerLinear( @[ @"kph",        @"Kilometers per Hour", @"km/h" ],                 @"mps", 1000./3600.,         0.);
+        registerLinear( @[ @"mph",        @"Miles per Hour",      @"mph"  ],                 @"mps", GCUNIT_MILES/3600.,  0.);
         registerInvLin( @[ @"secperkm",   @"Seconds per Kilometer",@"sec/km"],               @"mps", 1000.,               0.);
         registerInvLin( @[ @"minperkm",   @"Minutes per Kilometer",@"min/km", @"secperkm"],  @"mps", 60./3600.*1000.,     0.);
         registerInvLin( @[ @"secpermile", @"Seconds per Mile",    @"sec/mi" ],               @"mps", GCUNIT_MILES,        0.);
