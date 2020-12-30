@@ -69,17 +69,17 @@ extension CGSize {
 
     /// Align number on the decimal separator or on the first/last digit
     /// This property affects size calculation
-    public var numberAlignment : NumberAlignment = .decimalSeparator
+    public var numberAlignment : NumberAlignment = .right
     /// Align time with numbers or units
     /// This property affects size calculation
-    public var timeAlignment : TimeAlignment = .withNumber
+    public var timeAlignment : TimeAlignment = .center
 
     /// Alignment of the overall construct
     /// This property does not affects size calculation
     public var alignment : Alignment = .left
     /// Unit position with respect to the number
     /// This property does not affects size calculation
-    public var unitAlignment : UnitAlignment = .trailingNumber
+    public var unitAlignment : UnitAlignment = .left
     
     var count : UInt = 0
     
