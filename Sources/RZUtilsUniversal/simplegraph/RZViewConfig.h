@@ -32,6 +32,8 @@
 @import Cocoa;
 #endif
 
+NS_ASSUME_NONNULL_BEGIN
+
 @import RZUtils;
 
 typedef NS_ENUM(NSUInteger, gcFontStyle){
@@ -87,7 +89,7 @@ typedef NS_ENUM(NSUInteger, rzAttribute){
 +(NSDictionary<NSAttributedStringKey,id>*)attribute:(rzAttribute)attr;
 
 
-+(NSAttributedString*)attributedString:(NSString*)str attribute:(SEL)sel;
++(nullable NSAttributedString*)attributedString:(nullable NSString*)str attribute:(SEL)sel;
 
 
 
@@ -110,3 +112,5 @@ typedef NS_ENUM(NSUInteger, rzAttribute){
 -(NSDictionary<NSString*,id>*)viewConfigAttributeDisabled;
 
 @end
+
+NS_ASSUME_NONNULL_END

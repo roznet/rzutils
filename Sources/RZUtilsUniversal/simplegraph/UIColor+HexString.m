@@ -32,8 +32,7 @@
 }
 
 + (RZColor *)colorWithHexLight:(NSUInteger)rgbValue dark:(NSUInteger)darkRgbValue andAlpha:(double)alpha{
-#ifdef __IPHONE_13_0xx
-    
+#ifdef __IPHONE_13_0
     if( @available(iOS 13.0, *) ) {
         return [RZColor colorWithDynamicProvider:^(UITraitCollection*trait){
             if( trait.userInterfaceStyle == UIUserInterfaceStyleDark){

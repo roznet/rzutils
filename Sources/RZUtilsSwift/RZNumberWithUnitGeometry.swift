@@ -33,16 +33,24 @@ extension CGSize {
         case center
     }
     
-    public enum UnitPosition {
-        case aligned
+    public enum UnitAlignment {
+        case left
+        case right
         case trailingNumber
     }
     
     public enum TimeAlignment {
         case withNumber
         case withUnit
+        case center
     }
-        
+     
+    public enum NumberAlignment {
+        case left
+        case right
+        case decimalSeparator
+    }
+    
     /// the maximum size of all unit formated
     var unitSize : CGSize = CGSize.zero
     /// the maximum size of all the full numbers
@@ -58,11 +66,20 @@ extension CGSize {
     
     public var defaultNumberAttribute : [NSAttributedString.Key:Any] = [:]
     public var defaultUnitAttribute : [NSAttributedString.Key:Any] = [:]
-    
-    public var alignDecimalPart : Bool = true
-    public var alignment : Alignment = .left
-    public var unitPosition : UnitPosition = .trailingNumber
+
+    /// Align number on the decimal separator or on the first/last digit
+    /// This property affects size calculation
+    public var numberAlignment : NumberAlignment = .decimalSeparator
+    /// Align time with numbers or units
+    /// This property affects size calculation
     public var timeAlignment : TimeAlignment = .withNumber
+
+    /// Alignment of the overall construct
+    /// This property does not affects size calculation
+    public var alignment : Alignment = .left
+    /// Unit position with respect to the number
+    /// This property does not affects size calculation
+    public var unitAlignment : UnitAlignment = .trailingNumber
     
     var count : UInt = 0
     
@@ -94,28 +111,35 @@ extension CGSize {
                              numberAttribute : [NSAttributedString.Key:Any]? = nil,
                              unitAttribute : [NSAttributedString.Key:Any]? = nil){
         
-        let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
         let numberAttribute = numberAttribute ?? self.defaultNumberAttribute
-        
+        let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
         
         let components = numberWithUnit.formatComponents()
-        guard let fmtNoUnit = components.first else {
-            return
-        }
+        guard let fmtNoUnit = components.first else { return }
         
         let hasUnit : Bool = components.count == 2
         let fmtUnit = numberWithUnit.unit.abbr
-        
+
+        var numberSize = (fmtNoUnit as NSString).size(withAttributes: numberAttribute)
+        var totalSize = numberSize
+
         let decimalComponents = fmtNoUnit.components(separatedBy: self.decimalSeparatorSet)
         if decimalComponents.count > 1 {
             if let decimalPart = decimalComponents.last {
                 let decimalPartSize = (("." + decimalPart) as NSString).size(withAttributes: numberAttribute)
                 self.decimalPartSize.max(with: decimalPartSize)
+                if case NumberAlignment.decimalSeparator = self.numberAlignment {
+                    // this is not exact, but an initial guess as technically we should do a second loop in case
+                    // later decimal parts are bigger
+                    //      |--|
+                    //      123.0
+                    //        0.123
+                    //         |--|
+                    numberSize.width += (self.decimalPartSize.width - decimalPartSize.width)
+                }
             }
         }
         
-        let numberSize = (fmtNoUnit as NSString).size(withAttributes: numberAttribute)
-        var totalSize = numberSize
         self.numberSize.max(with: numberSize)
         
         if( hasUnit ){
@@ -129,6 +153,7 @@ extension CGSize {
             totalSize.height = max(totalSize.height, spacingSize.height, unitSize.height)
         }
         
+        totalSize.width = self.numberSize.width + self.spacingSize.width + self.unitSize.width
         self.totalSize.max(with: totalSize)
         
         self.accumulatedTotalSize.height += totalSize.height
@@ -137,11 +162,12 @@ extension CGSize {
         self.count += 1
     }
     
+    @discardableResult
     public func drawInRect(_ rect : CGRect,
                            numberWithUnit : GCNumberWithUnit,
                            numberAttribute : [NSAttributedString.Key:Any]? = nil,
                            unitAttribute : [NSAttributedString.Key:Any]? = nil,
-                           addUnit : Bool = true){
+                           addUnit : Bool = true) -> CGRect {
         
         let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
         let numberAttribute = numberAttribute ?? self.defaultNumberAttribute
@@ -151,7 +177,7 @@ extension CGSize {
         
         let components = numberWithUnit.formatComponents()
         guard let fmtNoUnit = components.first else {
-            return
+            return CGRect.zero
         }
         
         let hasUnit : Bool = components.count == 2
@@ -166,12 +192,13 @@ extension CGSize {
         }
 
         let currentNumberSize = (fmtNoUnit as NSString).size(withAttributes: numberAttribute)
-        //let currentUnitSize = (fmtUnit as NSString).size(withAttributes: unitAttribute)
+        let currentUnitSize = (fmtUnit as NSString).size(withAttributes: unitAttribute)
         
         //     |-----||------!
         //       23.2 km
         //        169 km
         //      15:05 min/km
+        //         1:20:30
 
         //   |-------||------!
         //      23.2  km
@@ -190,28 +217,42 @@ extension CGSize {
             break
         }
         
-        unitPoint.x += numberSize.width + self.spacingSize.width
-        numberPoint.x += (numberSize.width - currentNumberSize.width)
-        
+
         if !hasUnit && numberWithUnit.unit.format == gcUnitFormat.time {
-            if case TimeAlignment.withUnit = self.timeAlignment {
-                numberPoint.x += unitSize.width
+            switch self.timeAlignment {
+            case .withUnit:
+                numberPoint.x += (numberSize.width+unitSize.width+spacingSize.width - currentNumberSize.width)
+            case .center:
+                numberPoint.x += (totalSize.width - currentNumberSize.width) / 2.0
+            case .withNumber:
+                numberPoint.x += (numberSize.width - currentNumberSize.width)
+            }
+        }else{
+            
+            switch self.numberAlignment {
+            case .decimalSeparator:
+                numberPoint.x += (numberSize.width - currentNumberSize.width) - (decimalPartSize.width - currentDecimalPartSize.width)
+            case .left:
+                break
+            case .right:
+                numberPoint.x += (numberSize.width - currentNumberSize.width)
+            }
+            
+            switch unitAlignment {
+            case .left:
+                unitPoint.x += numberSize.width + self.spacingSize.width
+            case .right:
+                unitPoint.x += numberSize.width + self.spacingSize.width + (self.unitSize.width - currentUnitSize.width)
+            case .trailingNumber:
+                unitPoint.x = numberPoint.x + currentNumberSize.width + spacingSize.width
             }
         }
         
-        if alignDecimalPart {
-            numberPoint.x -= (decimalPartSize.width - currentDecimalPartSize.width)
-            if case UnitPosition.trailingNumber = unitPosition {
-                unitPoint.x -= (decimalPartSize.width - currentDecimalPartSize.width)
-            }
-        }
         
         (fmtNoUnit as NSString).draw(at: numberPoint, withAttributes: numberAttribute)
         if( hasUnit && addUnit ){
             (fmtUnit as NSString).draw(at: unitPoint, withAttributes: unitAttribute)
         }
-
+        return CGRect(origin: numberPoint, size: CGSize(width: currentNumberSize.width+currentUnitSize.width+spacingSize.width, height: currentNumberSize.height ))
     }
-    
-    
 }
