@@ -194,6 +194,12 @@ extension CGSize {
         let currentNumberSize = (fmtNoUnit as NSString).size(withAttributes: numberAttribute)
         let currentUnitSize = (fmtUnit as NSString).size(withAttributes: unitAttribute)
         
+        var currentTotalSize = currentNumberSize
+        if addUnit && hasUnit {
+            currentTotalSize.width += self.spacingSize.width + currentUnitSize.width
+            currentTotalSize.height = max( currentTotalSize.height, currentUnitSize.height)
+        }
+        
         //     |-----||------!
         //       23.2 km
         //        169 km
@@ -205,7 +211,8 @@ extension CGSize {
         //     169    km
         //      15:05 min/km
 
-        let overflow = rect.size.width - self.totalSize.width
+        //let overflow = rect.size.width - self.totalSize.width
+        let overflow = rect.size.width - currentTotalSize.width
         switch alignment {
         case .right:
             unitPoint.x += overflow
@@ -217,18 +224,21 @@ extension CGSize {
             break
         }
         
-
-        if !hasUnit && numberWithUnit.unit.format == gcUnitFormat.time {
+        // first special case, if center, just center output
+        if case .center = self.alignment {
+            // only move unit at the end of number (center other alignment don't mean much
+            unitPoint.x += currentNumberSize.width + spacingSize.width
+        }else if !hasUnit && numberWithUnit.unit.format == gcUnitFormat.time {
+            // Second Special case: time
             switch self.timeAlignment {
             case .withUnit:
-                numberPoint.x += (numberSize.width+unitSize.width+spacingSize.width - currentNumberSize.width)
+                numberPoint.x += (currentTotalSize.width - currentNumberSize.width)
             case .center:
                 numberPoint.x += (totalSize.width - currentNumberSize.width) / 2.0
             case .withNumber:
                 numberPoint.x += (numberSize.width - currentNumberSize.width)
             }
         }else{
-            
             switch self.numberAlignment {
             case .decimalSeparator:
                 numberPoint.x += (numberSize.width - currentNumberSize.width) - (decimalPartSize.width - currentDecimalPartSize.width)
@@ -247,7 +257,6 @@ extension CGSize {
                 unitPoint.x = numberPoint.x + currentNumberSize.width + spacingSize.width
             }
         }
-        
         
         (fmtNoUnit as NSString).draw(at: numberPoint, withAttributes: numberAttribute)
         if( hasUnit && addUnit ){

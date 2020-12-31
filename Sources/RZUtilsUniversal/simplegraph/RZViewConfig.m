@@ -205,6 +205,7 @@ static gcFontStyle _fontStyle;
 
 +(RZColor*)colorFor:(rzAttribute)attr{
     switch (attr) {
+        case rzAttributeTitle:
         case rzAttributeValue:
         case rzAttributeField:
         case rzAttributeUnit:
@@ -225,6 +226,10 @@ static gcFontStyle _fontStyle;
     CGFloat size = 0.0;
     
     switch (attr) {
+        case rzAttributeTitle:
+            fontName = [self boldFontName];
+            size = 20.0;
+            break;
         case rzAttributeValue:
         case rzAttributeField:
             fontName = [self boldFontName];

@@ -50,6 +50,7 @@ typedef NS_ENUM(NSUInteger, rzTextColor){
 };
 
 typedef NS_ENUM(NSUInteger, rzAttribute){
+    rzAttributeTitle,
     rzAttributeField,
     rzAttributeValue,
     rzAttributeUnit,
