@@ -258,6 +258,9 @@ extension CGSize {
             }
         }
         
+        numberPoint.y += (rect.height - currentTotalSize.height) / 2.0
+        unitPoint.y += (rect.height - currentTotalSize.height) / 2.0
+        
         (fmtNoUnit as NSString).draw(at: numberPoint, withAttributes: numberAttribute)
         if( hasUnit && addUnit ){
             (fmtUnit as NSString).draw(at: unitPoint, withAttributes: unitAttribute)
