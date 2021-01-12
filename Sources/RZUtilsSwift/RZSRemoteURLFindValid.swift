@@ -51,11 +51,7 @@ public typealias RZRemoteDownloadCompleteHandler = (String?) -> ();
     public func downloadFailed(_ connection: RZRemoteDownload!) {
         invalid()
     }
-    
-    public func downloadArraySuccessful(_ connection: RZRemoteDownload!, array theArray: [Any]!) {
-        invalid()
-    }
-    
+        
     public func downloadStringSuccessful(_ connection: RZRemoteDownload!, string theString: String!) {
         let d = Int(theString)
         if( d != nil){

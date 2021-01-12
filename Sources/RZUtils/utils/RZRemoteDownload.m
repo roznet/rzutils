@@ -364,7 +364,7 @@ static NSURLRequestCachePolicy _cachePolicy = NSURLRequestReloadIgnoringLocalAnd
         NSString * rv = RZReturnAutorelease([[NSString alloc] initWithData:data encoding:self.receivedEncoding]);
 
         if (rv == nil && data.length>0) {
-            rv =RZReturnAutorelease([[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding]);
+            rv =RZReturnAutorelease([[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
         }
         [self.downloadDelegate downloadStringSuccessful:self string:rv];
     }

@@ -32,7 +32,6 @@ typedef void(^RemoteDownloadPrepareUrl)(NSMutableURLRequest*req);
 @protocol RZRemoteDownloadDelegate
 
 -(void)downloadFailed:(RZRemoteDownload*)connection;
--(void)downloadArraySuccessful:(RZRemoteDownload*)connection array:(NSArray*)theArray;
 -(void)downloadStringSuccessful:(RZRemoteDownload*)connection string:(NSString*)theString;
 @optional
 -(RemoteDownloadPrepareUrl)prepareUrlFunc;
