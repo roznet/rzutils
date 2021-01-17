@@ -370,7 +370,7 @@ static NSString *_LCLLogFile_prefix(const char *identifier_c, uint32_t level,
     }
     
     // create prefix
-    NSString *prefix = [NSString stringWithFormat:@" %u:%x %s %s%s%s%s%s%s%s ",
+    NSString *prefix = [NSString stringWithFormat:@" %u:%x %s %s%s%s%s%s%s%s; ",
                         /*    */
                         /* %u */ _LCLLogFile_processId,
                         /* %x */ mach_thread_self(),
