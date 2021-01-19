@@ -57,7 +57,7 @@ void buildUnitSystemCache(){
                           @"mile"       : @"kilometer",
                           @"minpermile" : @"minperkm",
                           @"mph"        : @"kph",
-                          @"fahrenheit" : @"celcius",
+                          @"fahrenheit" : @"celsius",
                           @"min100yd"   : @"min100m",
                           @"hydph"      : @"hmph",
                           @"strideyd"   : @"stride",
@@ -304,8 +304,8 @@ void registerUnits(){
         registerLinea1( @[ @"millimeter",@"Millimeter",@"mm"],   @"meter", 0.001,         0.0);
         registerLinea0( @[ @"floor",     @"Floor",      @"floors"],    @"meter", 3.0,           0.0);
         // special meterelevation that will not have coumpounding
-        registerLinea0( @[ @"meterelevation",     @"Meters",     @"m" ],  @"meter", 1.0,           0.0);
-        registerLinear( @[ @"footelevation",      @"Feet",       @"ft"],  @"meter", GCUNIT_FOOT,   0.0);
+        registerLinea0( @[ @"meterelevation",@"Meters (Elev.)",     @"m" ],  @"meter", 1.0,           0.0);
+        registerLinear( @[ @"footelevation", @"Feet (Elev.)",       @"ft"],  @"meter", GCUNIT_FOOT,   0.0);
 
         //mass
         registerLinear( @[ @"kilogram", @"Kilograms", @"kg"],  @"kilogram", 1.0, 0.0);
@@ -313,7 +313,7 @@ void registerUnits(){
         registerLinear( @[ @"gram",     @"Gram",      @""],    @"kilogram", 0.001, 0.0);
 
         // temperature
-        registerLinea0( @[ @"celcius",    @"°Celsius",    @"°C"], @"celsius", 1.,        0.0);
+        registerLinea0( @[ @"celcius",    @"° Celsius",    @"°C"], @"celsius", 1.,        0.0);
         registerLinea0( @[ @"celsius",    @"°Celsius",    @"°C"], @"celsius", 1.,        0.0);
         registerLinea0( @[ @"fahrenheit", @"°Fahrenheit", @"°F"], @"celsius", 5./9.,     -32.*5./9.);
 
@@ -568,7 +568,7 @@ void registerUnits(){
     // few special cases
     if (!rv) {
         if ([aStr isEqualToString:@"\U00002103"]) {
-            rv = [GCUnit unitForKey:@"celcius"];
+            rv = [GCUnit unitForKey:@"celsius"];
         }else if ([aStr isEqualToString:@"\U00002109"]){
             rv = [GCUnit unitForKey:@"fahrenheit"];
         }
@@ -992,7 +992,6 @@ GCUNITFORKEY(minute);
 GCUNITFORKEY(secpermile);
 GCUNITFORKEY(min100m);
 GCUNITFORKEY(second);
-GCUNITFORKEY(celcius);
 GCUNITFORKEY(celsius);
 GCUNITFORKEY(percent);
 GCUNITFORKEY(minperkm);

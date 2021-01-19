@@ -192,7 +192,7 @@ NS_ASSUME_NONNULL_BEGIN;
 +(GCUnit*)kilogram;
 +(GCUnit*)gram;
 +(GCUnit*)pound;
-+(GCUnit*)celcius;
++(GCUnit*)celsius;
 +(GCUnit*)fahrenheit;
 +(GCUnit*)semicircle;
 +(GCUnit*)kilojoule;

@@ -183,13 +183,13 @@
     XCTAssertEqual(minperkm,    [minperkm commonUnit:min100m],  @"minperkm vs min100m common");
     XCTAssertEqual(kph,         [kph commonUnit:min100m],       @"kph vs min100m common");
     
-    GCUnit * celcius = [GCUnit unitForKey:@"celcius"];
+    GCUnit * celsius = [GCUnit unitForKey:@"celsius"];
     GCUnit * fahrenheit = [GCUnit unitForKey:@"fahrenheit"];
     
-    XCTAssertEqualWithAccuracy([fahrenheit convertDouble:0.  fromUnit:celcius], 32.0, 1e-8, @"0C = 32F");
-    XCTAssertEqualWithAccuracy([fahrenheit convertDouble:20. fromUnit:celcius], 68.,  1e-8, @"20C = 68F");
-    XCTAssertEqualWithAccuracy([celcius convertDouble:64.4 fromUnit:fahrenheit], 18., 1e-8, @"18C = 64.4F");
-    XCTAssertEqualWithAccuracy([fahrenheit convertDouble:-20. fromUnit:celcius], -4., 1e-8, @"-20C = -4C");
+    XCTAssertEqualWithAccuracy([fahrenheit convertDouble:0.  fromUnit:celsius], 32.0, 1e-8, @"0C = 32F");
+    XCTAssertEqualWithAccuracy([fahrenheit convertDouble:20. fromUnit:celsius], 68.,  1e-8, @"20C = 68F");
+    XCTAssertEqualWithAccuracy([celsius convertDouble:64.4 fromUnit:fahrenheit], 18., 1e-8, @"18C = 64.4F");
+    XCTAssertEqualWithAccuracy([fahrenheit convertDouble:-20. fromUnit:celsius], -4., 1e-8, @"-20C = -4C");
     
     //angle
     GCUnit * radian = [GCUnit unitForKey:@"radian"];
@@ -250,8 +250,8 @@
     NSArray * tests = @[
                         @[@"14 km/h",           @14.0,   @"kph"],
                         @[@"14km/h",            @14.0,   @"kph"],
-                        @[@"21℃",               @21.0,   @"celcius"],
-                        @[@"21 °C",             @21.0,   @"celcius"],
+                        @[@"21℃",               @21.0,   @"celsius"],
+                        @[@"21 °C",             @21.0,   @"celsius"],
                         @[@"  10:20",           @620.,   @"second"],
                         @[@"10:30 min/km",      @10.5,   @"minperkm"],
                         @[@"10:30 minperkm",    @10.5,   @"minperkm"],
