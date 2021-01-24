@@ -118,7 +118,7 @@ extension CGSize {
         guard let fmtNoUnit = components.first else { return }
         
         let hasUnit : Bool = components.count == 2
-        let fmtUnit = numberWithUnit.unit.abbr
+        let fmtUnit = components.last ?? ""
 
         var numberSize = (fmtNoUnit as NSString).size(withAttributes: numberAttribute)
         var totalSize = numberSize
@@ -181,7 +181,7 @@ extension CGSize {
         }
         
         let hasUnit : Bool = components.count == 2
-        let fmtUnit = numberWithUnit.unit.abbr
+        let fmtUnit = components.last ?? ""
 
         var currentDecimalPartSize = CGSize.zero
         let decimalComponents = fmtNoUnit.components(separatedBy: self.decimalSeparatorSet)
