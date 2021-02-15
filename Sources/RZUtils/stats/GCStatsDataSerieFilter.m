@@ -23,9 +23,7 @@
 //  SOFTWARE.
 //  
 
-#if TARGET_OS_IPHONE
-#import <UIKit/UIKit.h"
-#endif
+@import Foundation;
 #import "GCStatsDataSerieFilter.h"
 #import "RZLog.h"
 #import "RZMacros.h"

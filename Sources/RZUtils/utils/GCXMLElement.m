@@ -23,9 +23,7 @@
 //  SOFTWARE.
 //  
 
-#if TARGET_OS_IPHONE
-@import UIKit;
-#endif
+@import Foundation;
 #import "GCXMLElement.h"
 #import "RZMacros.h"
 
