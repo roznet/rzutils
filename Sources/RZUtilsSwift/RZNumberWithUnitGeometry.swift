@@ -51,6 +51,11 @@ extension CGSize {
         case decimalSeparator
     }
     
+    public enum DisplaySign {
+        case natural
+        case always
+    }
+    
     /// the maximum size of all unit formated
     var unitSize : CGSize = CGSize.zero
     /// the maximum size of all the full numbers
@@ -80,6 +85,8 @@ extension CGSize {
     /// Unit position with respect to the number
     /// This property does not affects size calculation
     public var unitAlignment : UnitAlignment = .left
+    
+    public var sign : DisplaySign = .natural
     
     var count : UInt = 0
     
@@ -115,7 +122,11 @@ extension CGSize {
         let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
         
         let components = numberWithUnit.formatComponents()
-        guard let fmtNoUnit = components.first else { return }
+        guard var fmtNoUnit = components.first else { return }
+        
+        if self.sign == .always && !fmtNoUnit.hasPrefix("-") {
+            fmtNoUnit = "+" + fmtNoUnit
+        }
         
         let hasUnit : Bool = components.count == 2
         let fmtUnit = components.last ?? ""
@@ -167,7 +178,8 @@ extension CGSize {
                            numberWithUnit : GCNumberWithUnit,
                            numberAttribute : [NSAttributedString.Key:Any]? = nil,
                            unitAttribute : [NSAttributedString.Key:Any]? = nil,
-                           addUnit : Bool = true) -> CGRect {
+                           addUnit : Bool = true,
+                           sign: DisplaySign = .natural) -> CGRect {
         
         let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
         let numberAttribute = numberAttribute ?? self.defaultNumberAttribute
@@ -176,8 +188,12 @@ extension CGSize {
         var unitPoint = rect.origin
         
         let components = numberWithUnit.formatComponents()
-        guard let fmtNoUnit = components.first else {
+        guard var fmtNoUnit = components.first else {
             return CGRect.zero
+        }
+        
+        if sign == .always && !fmtNoUnit.hasPrefix("-") {
+            fmtNoUnit = "+" + fmtNoUnit
         }
         
         let hasUnit : Bool = components.count == 2
