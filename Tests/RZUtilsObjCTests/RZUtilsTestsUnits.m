@@ -148,13 +148,13 @@
     GCUnit *minperkm = [GCUnit unitForKey:@"minperkm"];
     
     XCTAssertEqualObjects([minperkm formatDouble:[minperkm convertDouble:11. fromUnit:kph]],         @"05:27 min/km", @"11kmh in min/km");
-    XCTAssertEqualObjects([kph formatDouble:[kph convertDouble:6. fromUnit:minperkm]],               @"10.0 km/h",   @"6 min/km in kmh");
+    XCTAssertEqualObjects([kph formatDouble:[kph convertDouble:6. fromUnit:minperkm]],               @"10.00 km/h",   @"6 min/km in kmh");
     XCTAssertEqualObjects([minpermile formatDouble:[minpermile convertDouble:11. fromUnit:kph]],     @"08:47 min/mi", @"11kmh in min/mi");
     XCTAssertEqualObjects([minpermile formatDouble:[minpermile convertDouble:5. fromUnit:minperkm]], @"08:03 min/mi", @"5min/km in min/mi");
     XCTAssertEqualObjects([minpermile formatDouble:5.99],                                            @"05:59 min/mi", @"5.99min/mi round down");
     XCTAssertEqualObjects([minpermile formatDouble:5.99999],                                         @"06:00 min/mi", @"5.9999min/mi round up");
-    XCTAssertEqualObjects([mph formatDouble:[kph convertDouble:20. toUnit:mph]],                     @"12.4 mph",    @"20kph in mph");
-    XCTAssertEqualObjects([mph formatDouble:[minperkm convertDouble:5. toUnit:mph]],                 @"7.5 mph",     @"5 min/km in mph");
+    XCTAssertEqualObjects([mph formatDouble:[kph convertDouble:20. toUnit:mph]],                     @"12.43 mph",    @"20kph in mph");
+    XCTAssertEqualObjects([mph formatDouble:[minperkm convertDouble:5. toUnit:mph]],                 @"7.46 mph",     @"5 min/km in mph");
     
     GCUnit * date = [GCUnit unitForKey:@"dateshort"];
     NSDateComponents * comp = [[NSDateComponents alloc] init];
