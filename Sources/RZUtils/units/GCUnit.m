@@ -730,8 +730,9 @@ void registerUnits(){
     NSArray * fractComponents = nil;
 
     if (_fractionUnit) {
-        toFormat = floor(toFormat);
-        fraction = aDbl-toFormat;
+        // Negative number, use ceiling and fraction should be abs as sign only handled for first one
+        toFormat = toFormat > 0 ? floor(toFormat) : ceil(toFormat);
+        fraction = fabs(aDbl-toFormat);
         if (_format == gcUnitFormatTime) {
             fmt = @"%02.0f";
         }else{

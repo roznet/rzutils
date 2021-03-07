@@ -82,6 +82,17 @@
     
 }
 
+-(void)testSmallDiffs{
+    GCUnit * minperkm = GCUnit.minperkm;
+    GCNumberWithUnit * nu1 = [GCNumberWithUnit numberWithUnit:minperkm andValue:5.34];
+    GCNumberWithUnit * nu2 = [GCNumberWithUnit numberWithUnit:minperkm andValue:5.39];
+    GCNumberWithUnit * nudiff12 = [GCNumberWithUnit numberWithUnit:minperkm andValue:nu1.value-nu2.value];
+    GCNumberWithUnit * nudiff21 = [GCNumberWithUnit numberWithUnit:minperkm andValue:nu2.value-nu1.value];
+    
+    XCTAssertEqualObjects(nudiff12.formatDouble, @"-0:03 min/km", @"Compound units for <0 numbers");
+    XCTAssertEqualObjects(nudiff21.formatDouble, @"00:03 min/km", @"Compound units for <0 numbers");
+}
+
 -(void)testUnitsDates{
     
     NSDate * start= [NSDate dateForRFC3339DateTimeString:@"2012-11-11T18:48:16.000Z"];
