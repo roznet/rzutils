@@ -347,22 +347,20 @@
 -(NSString*)calendarUnitFormat:(NSCalendarUnit)aUnit{
     if (aUnit == NSCalendarUnitMonth) {
         NSDateFormatter * formatter = RZReturnAutorelease([[NSDateFormatter alloc] init]);
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.dateFormat = @"MMM yyyy";
+        formatter.dateFormat = [NSDateFormatter dateFormatFromTemplate:@"MMMyyyy" options:0 locale:[NSLocale currentLocale]];
+        formatter.locale = [NSLocale currentLocale];
         return [formatter stringFromDate:self];
     }else if(aUnit == NSCalendarUnitYear){
         NSDateFormatter * formatter = RZReturnAutorelease([[NSDateFormatter alloc] init]);
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.dateFormat = @"yyyy";
+        formatter.dateFormat = [NSDateFormatter dateFormatFromTemplate:@"yyyy" options:0 locale:[NSLocale currentLocale]];
         return [formatter stringFromDate:self];
     }else if(aUnit == NSCalendarUnitDay){
         NSDateFormatter * formatter = RZReturnAutorelease([[NSDateFormatter alloc] init]);
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.dateFormat = @"MMM dd";
+        formatter.dateFormat = [NSDateFormatter dateFormatFromTemplate:@"dMMM" options:0 locale:[NSLocale currentLocale]];
         return [formatter stringFromDate:self];
     }else{
         NSDateFormatter * formatter = RZReturnAutorelease([[NSDateFormatter alloc] init]);
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.locale = [NSLocale currentLocale];
         formatter.dateStyle = NSDateFormatterShortStyle;
         formatter.timeStyle = NSDateFormatterNoStyle;
         return [formatter stringFromDate:self];
