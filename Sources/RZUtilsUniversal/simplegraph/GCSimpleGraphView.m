@@ -105,13 +105,15 @@
 
 -(void)updateColorsForIndex:(NSUInteger)idx{
     if( self.gradientColors || self.gradientColorsFill){
-        GCStatsDataPoint * gradientPoint = [self.gradientDataSerie dataPointAtIndex:idx];
-        CGFloat val = self.gradientFunction ? [self.gradientFunction valueForX:gradientPoint.x_data] : gradientPoint.y_data;
-        if( self.gradientColors ){
-            self.strokeColor = [self.gradientColors colorsForValue:val];
-        }
-        if( self.gradientColorsFill ){
-            self.fillColor = [self.gradientColorsFill colorsForValue:val];
+        if( idx < self.gradientDataSerie.count){
+            GCStatsDataPoint * gradientPoint = [self.gradientDataSerie dataPointAtIndex:idx];
+            CGFloat val = self.gradientFunction ? [self.gradientFunction valueForX:gradientPoint.x_data] : gradientPoint.y_data;
+            if( self.gradientColors ){
+                self.strokeColor = [self.gradientColors colorsForValue:val];
+            }
+            if( self.gradientColorsFill ){
+                self.fillColor = [self.gradientColorsFill colorsForValue:val];
+            }
         }
     }
 }
