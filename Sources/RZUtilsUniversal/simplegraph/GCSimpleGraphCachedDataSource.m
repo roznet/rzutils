@@ -69,13 +69,13 @@
 #endif
 
 -(void)setupAsBackgroundGraph{
-    self.color = [RZColor colorWithRed:0.2 green:0.2 blue:0.2 alpha:0.2];
+    self.color = [[RZColor systemGrayColor] colorWithAlphaComponent:0.2];
     if (self.fillColorForSerie) {
-        self.fillColorForSerie = [RZColor colorWithRed:0.2 green:0.2 blue:0.2 alpha:0.2];
+        self.fillColorForSerie = self.color;
     }
     if (self.gradientColors) {
         //self.gradientColors = [self.gradientColors gradientAsBackground];
-        self.gradientColors = [self.gradientColors gradientAsOneColor:[RZColor colorWithRed:0.2 green:0.2 blue:0.2 alpha:0.2]];
+        self.gradientColors = [self.gradientColors gradientAsOneColor:self.color];
     }
     self.legend = nil;
 }
