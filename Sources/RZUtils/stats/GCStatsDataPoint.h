@@ -53,6 +53,7 @@
 -(void)multiplyPoint:(GCStatsDataPoint*)otherPoint;
 
 -(BOOL)isEqualToPoint:(GCStatsDataPoint*)other;
+-(BOOL)isSameX:(GCStatsDataPoint*)other;
 
 @end
 

@@ -160,6 +160,9 @@ gcStatsRange maxRangeXOnly( gcStatsRange range1, gcStatsRange range2){
 
 #pragma mark - Add/Remove Points
 
+-(void)addDataPoint:(GCStatsDataPoint *)point{
+    [dataPoints addObject:point];
+}
 -(void)addDataPointWithDate:(NSDate*)aDate andValue:(double)value{
     [dataPoints addObject:[GCStatsDataPoint dataPointWithDate:aDate andValue:value]];
 }
@@ -386,6 +389,16 @@ gcStatsRange maxRangeXOnly( gcStatsRange range1, gcStatsRange range2){
 
 -(GCStatsDataPoint*)dataPointAtIndex:(NSUInteger)idx{
     return (GCStatsDataPoint*)dataPoints[idx];
+}
+-(void)setDataPoint:(GCStatsDataPoint*)point atIndex:(NSUInteger)idx{
+    if( idx < self.dataPoints.count) {
+        [self.dataPoints setObject:point atIndexedSubscript:idx];
+    }
+}
+-(void)setObject:(GCStatsDataPoint *)point atIndexedSubscript:(NSUInteger)idx{
+    if( idx < self.dataPoints.count) {
+        [self.dataPoints setObject:point atIndexedSubscript:idx];
+    }
 }
 -(GCStatsDataPoint*)objectAtIndexedSubscript:(NSUInteger)idx{
     return (GCStatsDataPoint*)dataPoints[idx];

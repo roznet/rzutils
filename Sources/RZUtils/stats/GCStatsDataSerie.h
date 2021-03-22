@@ -139,6 +139,8 @@ gcStatsRange maxRangeXOnly( gcStatsRange range1, gcStatsRange range2);
 -(void)addDataPointNoValueWithX:(double)x;
 -(void)addDataPointNoValueWithDate:(NSDate*)aDate;
 -(void)addDataPointNoValueWithDate:(NSDate*)aDate since:(NSDate*)first;
+-(void)addDataPoint:(GCStatsDataPoint*)point;
+
 /**
  Add new point copy with same class and x_data as point and value
  */
@@ -159,7 +161,9 @@ gcStatsRange maxRangeXOnly( gcStatsRange range1, gcStatsRange range2);
 
 -(NSUInteger)count;
 -(GCStatsDataPoint*)dataPointAtIndex:(NSUInteger)idx;
+-(void)setDataPoint:(GCStatsDataPoint*)point atIndex:(NSUInteger)idx;
 -(GCStatsDataPoint*)objectAtIndexedSubscript:(NSUInteger)idx;
+-(void)setObject:(GCStatsDataPoint*)point atIndexedSubscript:(NSUInteger)idx;
 -(GCStatsDataPoint*)lastObject;
 -(GCStatsDataPoint*)firstObject;
 

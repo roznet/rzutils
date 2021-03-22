@@ -165,6 +165,10 @@
 -(BOOL)isEqualToPoint:(GCStatsDataPoint*)other{
     return fabs(other.x_data - self.x_data) < 1.e-10 && fabs(other.y_data-self.y_data) < 1.e-8;
 }
+
+-(BOOL)isSameX:(GCStatsDataPoint*)other{
+    return fabs(other.x_data - self.x_data) < 1.e-10;
+}
 @end
 
 @implementation GCStatsDataPointNoValue
