@@ -48,9 +48,21 @@ NS_INLINE NSArray * filesMatchingLogic(NSString * documentsDirectory, FileOrgani
 
 @implementation RZFileOrganizer
 
-+(nullable NSString*)writeableFilePath:(nullable NSString*)aName forGroup:(NSString*)group{
++(NSString*)writeableFilePath:(nullable NSString*)aName forGroup:(NSString*)group{
     NSURL * url = [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:group];
-    return [url path];
+    NSString * documentsDirectory = [url path];
+    
+    return( aName ? [documentsDirectory stringByAppendingPathComponent:aName] : documentsDirectory);
+}
+
++(nullable NSString*)writeableFilePathIfExists:(NSString*)aName forGroup:(NSString*)group{
+    NSURL * url = [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:group];
+    NSString * documentsDirectory = [url path];
+    NSString * rv = [documentsDirectory stringByAppendingPathComponent:aName];
+    if( ![[NSFileManager defaultManager] fileExistsAtPath:rv]){
+        return nil;
+    }
+    return rv;
 }
 
 +(NSString*)writeableFilePathWithFormat:(NSString *)fmt, ...{
@@ -71,6 +83,18 @@ NS_INLINE NSArray * filesMatchingLogic(NSString * documentsDirectory, FileOrgani
 
     return( aName ? [documentsDirectory stringByAppendingPathComponent:aName] : documentsDirectory);
 }
+
++(nullable NSString*)writeableFilePathIfExists:(NSString*)aName{
+    NSArray * paths = NSSearchPathForDirectoriesInDomains( NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString * documentsDirectory = paths[0];
+    NSString * rv = [documentsDirectory stringByAppendingPathComponent:aName];
+    NSFileManager * fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:rv]){
+        rv = nil;
+    }
+    return( rv );
+}
+
 
 +(BOOL)ensureWriteableFilePath:(NSString*)aName{
     NSArray * paths = NSSearchPathForDirectoriesInDomains( NSDocumentDirectory, NSUserDomainMask, YES);
@@ -114,16 +138,6 @@ NS_INLINE NSArray * filesMatchingLogic(NSString * documentsDirectory, FileOrgani
     return( rv );
 }
 
-+(nullable NSString*)writeableFilePathIfExists:(NSString*)aName{
-    NSArray * paths = NSSearchPathForDirectoriesInDomains( NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString * documentsDirectory = paths[0];
-    NSString * rv = [documentsDirectory stringByAppendingPathComponent:aName];
-    NSFileManager * fileManager = [NSFileManager defaultManager];
-    if (![fileManager fileExistsAtPath:rv]){
-        rv = nil;
-    }
-	return( rv );
-}
 
 +(NSString*)bundleFilePath:(nullable NSString*)aName forClass:(Class)cls{
     if (aName) {

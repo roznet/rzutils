@@ -65,7 +65,8 @@ typedef BOOL (^FileOrganizerMatch)(NSString*fn);
  @param group url of the group
  @return path for file or nil if group is not supported
  */
-+(nullable NSString*)writeableFilePath:(nullable NSString*)aName forGroup:(NSString*)group;
++(NSString*)writeableFilePath:(nullable NSString*)aName forGroup:(NSString*)group;
++(nullable NSString*)writeableFilePathIfExists:(NSString*)aName forGroup:(NSString*)group;
 
 +(void)createEditableCopyOfFile:(NSString*)aName;
 +(BOOL)createEditableCopyOfFileIfNeeded:(NSString*)aName;
