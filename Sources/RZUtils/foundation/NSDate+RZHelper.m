@@ -373,7 +373,7 @@
 
     if (_gregorianCalendar == nil) {
         _gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
-        [_gregorianCalendar setTimeZone:[NSTimeZone timeZoneWithName:@"UTC"]];
+        [_gregorianCalendar setTimeZone:[NSTimeZone defaultTimeZone]];
     }
     return [_gregorianCalendar dateByAddingComponents:comp toDate:self options:0];
 }
