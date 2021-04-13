@@ -38,6 +38,16 @@ const char * RZLog_components[RZLogLevelsEnd] = {
     "SEGV"
 };
 
+// By default only output to console in simulator
+#if TARGET_IPHONE_SIMULATOR
+BOOL RZLogOutputToConsole = true;
+#else
+BOOL RZLogOutputToConsole = false;
+#endif
+void RZLogSetOutputToConsole(BOOL val){
+    RZLogOutputToConsole = val;
+}
+
 NSString * RZLogFileName(){
     return [LCLLogFile path];
 }

@@ -46,22 +46,17 @@ extern const char * RZLog_components[];
 
 NSString * RZLogFileName(void);
 
-#if TARGET_IPHONE_SIMULATOR
-#define RZLOG_CONSOLE_OUTPUT 1
-#else
-#if TARGET_OS_IPHONE
-#else
+extern BOOL RZLogOutputToConsole;
+void RZLogSetOutputToConsole(BOOL);
+
 #if DEBUG
 #define RZLOG_CONSOLE_OUTPUT 1
 #endif
-#endif
-#endif
-
 
 #if RZLOG_CONSOLE_OUTPUT
 #define RZLog(_level, _format, ...) { \
     _lcl_logger_autoreleasepool_begin                                          \
-    if (true || _level > RZLogWarning){ \
+    if (RZLogOutputToConsole){ \
         NSLog( _format, ## __VA_ARGS__); \
     } \
     [LCLLogFile logWithIdentifier:RZLog_components[_level]                     \

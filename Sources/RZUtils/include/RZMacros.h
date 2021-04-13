@@ -86,6 +86,12 @@
 #define PROFILE_STOP( text )
 #endif
 
+#if DEBUG
+#define RZLogDebuggerOutput() { if( [RZSystemInfo isDebuggerAttached] ) { RZLogSetOutputToConsole(true); } }
+#else
+#define RZLogDebuggerOutput()
+#endif
+
 #if TARGET_IPHONE_SIMULATOR
 #define DEBUG_BREAK() asm("int3")
 #else

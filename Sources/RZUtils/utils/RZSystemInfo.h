@@ -35,5 +35,5 @@
 +(NSDictionary*)wifiNetworkInfo;
 +(NSString*)standardizeBSSID:(NSString*)bssid;
 +(NSString*)standardizeSSID:(NSString*)ssid;
-
++(BOOL)isDebuggerAttached;
 @end
