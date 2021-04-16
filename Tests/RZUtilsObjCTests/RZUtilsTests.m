@@ -66,8 +66,44 @@
         NSDate * got = [testDate dateByAddingGregorianComponents:comp];
         XCTAssertEqualObjects(got, expected, @"date expected for %@", mat);
     }
+}
+
+-(void)testCalendarSchedule{
+    NSCalendar * calculationCalendar = [NSCalendar currentCalendar];
+    [calculationCalendar setTimeZone:[NSTimeZone timeZoneWithName:@"Europe/London"]];
     
-    
+    NSDate * referenceDate = [NSDate dateForGarminModernString:@"2021-04-22 11:00:05"];
+    NSDate * end_date      = referenceDate;
+    NSDate * start_date    = referenceDate;
+
+    NSCalendarUnit units[] = { NSCalendarUnitYear, NSCalendarUnitMonth, NSCalendarUnitWeekOfYear };
+    NSTimeInterval shifts[] = { 24*3600*365*5, 24*3600*400, 24*3600*7*30, 24*3600*14, 24*3600*2 };
+    NSArray<NSString*>*units_descs = @[ @"Y", @"M", @"W"];
+    for(size_t i_unit = 0; i_unit < sizeof(units)/sizeof(NSCalendarUnit); i_unit++){
+        for(size_t i_shift = 0; i_shift < sizeof(shifts)/sizeof(NSTimeInterval); i_shift++){
+            NSCalendarUnit unit = units[i_unit];
+            NSString * unit_desc = units_descs[i_unit];
+            
+            NSTimeInterval shift = shifts[i_shift];
+            
+            start_date = [referenceDate dateByAddingTimeInterval:-shift];
+            
+            NSString * desc = [NSString stringWithFormat:@"%@ start: %@ end: %@", unit_desc, start_date, end_date];
+
+            NSArray<NSDate*>*calendarSchedule = [calculationCalendar scheduleForComponent:NSCalendarUnitMonth fromDate:start_date toDate:end_date referenceDate:nil];
+            
+            XCTAssertGreaterThan(calendarSchedule.count, 1, @"%@", desc);
+            XCTAssertNotEqual([calendarSchedule.firstObject compare:start_date], NSOrderedDescending, @"%@", desc);
+            XCTAssertNotEqual([calendarSchedule.lastObject compare:start_date], NSOrderedAscending, @"%@", desc);
+            
+            NSArray<NSDate*>*rollingSchedule = [calculationCalendar scheduleForComponent:NSCalendarUnitMonth fromDate:start_date toDate:end_date referenceDate:end_date];
+
+            XCTAssertGreaterThan(calendarSchedule.count, 1, @"%@", desc);
+            XCTAssertNotEqual([calendarSchedule.firstObject compare:start_date], NSOrderedDescending, @"%@", desc);
+            XCTAssertNotEqual([calendarSchedule.lastObject compare:start_date], NSOrderedAscending, @"%@", desc);
+
+        }
+    }
 }
 
 -(void)testRegressionManager{

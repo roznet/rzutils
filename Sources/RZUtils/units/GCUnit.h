@@ -107,7 +107,9 @@ NS_ASSUME_NONNULL_BEGIN;
 -(NSString*)formatDouble:(double)aDbl;
 -(NSString*)formatDoubleNoUnits:(double)aDbl;
 -(NSAttributedString*)attributedStringFor:(double)aDbl valueAttr:(NSDictionary*)vAttr unitAttr:(nullable NSDictionary*)uAttr;
+
 -(NSArray<NSString*>*)formatComponentsForDouble:(double)aDbl;
+-(NSString*)formatDouble:(double)aDbl addAbbr:(BOOL)addAbbr;
 
 -(GCUnit*)unitForSystem:(gcUnitSystem)system;
 -(GCUnit*)unitForGlobalSystem;
@@ -117,8 +119,8 @@ NS_ASSUME_NONNULL_BEGIN;
 
 -(NSComparisonResult)compare:(GCUnit*)other;
 
--(double)axisKnobSizeFor:(double)range numberOfKnobs:(NSUInteger)n;
--(NSArray*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend;
+-(double)axisKnobSizeFor:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max;
+-(NSArray<NSNumber*>*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend;
 
 +(void)setCalendar:(NSCalendar*)cal;
 
@@ -214,61 +216,4 @@ NS_ASSUME_NONNULL_BEGIN;
 @end
 
 
-@interface GCUnitLinear : GCUnit
-
-@property (nonatomic,assign) double multiplier;
-@property (nonatomic,assign) double offset;
-
-+(GCUnitLinear*)unitLinearWithArray:(NSArray*)defs reference:(NSString*)aref multiplier:(double)aMult andOffset:(double)aOffset;
-
--(double)valueToReferenceUnit:(double)aVal;
--(double)valueFromReferenceUnit:(double)aVal;
-
-@end
-
-@interface GCUnitInverseLinear : GCUnit{
-    double multiplier;
-    double offset;
-}
-@property (nonatomic,assign) double multiplier;
-@property (nonatomic,assign) double offset;
-
-+(GCUnitInverseLinear*)unitInverseLinearWithArray:(NSArray*)defs reference:(NSString*)aref multiplier:(double)aMult andOffset:(double)aOffset;
-
--(double)valueToReferenceUnit:(double)aVal;
--(double)valueFromReferenceUnit:(double)aVal;
-
-@end
-
-@interface GCUnitDate : GCUnit{
-    NSDateFormatter * dateFormatter;
-}
-@property (nonatomic,retain) NSDateFormatter * dateFormatter;
-@property (nonatomic,assign) NSCalendarUnit calendarUnit;
-@property (nonatomic,retain) NSCalendar * calendar;
-@property (nonatomic,assign) BOOL useCalendarUnit;
-
--(NSString*)formatDouble:(double)aDbl;
-
-@end
-
-@interface GCUnitTimeOfDay : GCUnit
-@property (nonatomic,retain) NSDateFormatter * dateFormatter;
-@property (nonatomic,retain) NSCalendar * calendar;
-@end
-
-
-@interface GCUnitElapsedSince :GCUnit
-
-+(GCUnitElapsedSince*)elapsedSince:(NSDate*)date;
-
-@end
-
-@interface GCUnitPerformanceRange : GCUnit
-@property (nonatomic,assign) double max;
-@property (nonatomic,assign) double min;
-
-+(GCUnitPerformanceRange*)performanceUnitFrom:(double)aMin to:(double)aMax;
-
-@end
 NS_ASSUME_NONNULL_END

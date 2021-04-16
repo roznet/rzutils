@@ -63,6 +63,10 @@ NS_INLINE double TO_LOG_SCALE(double x,double base, double shift, double scale) 
 }
 #endif
 
+-(NSString*)description{
+    return [NSString stringWithFormat:@"log(%@)", self.underlyingUnit];
+}
+
 -(double)valueToReferenceUnit:(double)aVal{
     return FROM_LOG_SCALE(aVal,_base,_shift,_scale);
 }
@@ -81,4 +85,50 @@ NS_INLINE double TO_LOG_SCALE(double x,double base, double shift, double scale) 
     return [self.underlyingUnit formatDouble:unitValue];
 }
 
+-(NSArray<NSNumber*>*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend{
+    NSArray<NSNumber*>*starting = [super axisKnobs:nKnobs min:x_min max:x_max extendToKnobs:extend];
+    
+    NSMutableArray*rv = [NSMutableArray array];
+    
+    double attemptBase = self.axisBase != 0.0 ? self.axisBase : 100;
+    
+    NSArray<NSNumber*>*attempts = nil;
+    if( fabs(self.underlyingUnit.axisBase - 60.0) < 1.0E-5){
+        // special case for seconds
+        attempts = @[ @(5), @(10), @(15), @(30), @(60), @(600), @(60*30), @(60*60)];
+    }else{
+        attempts = @[ @(5), @(10), @(50), @(100), @(500), @(1000), @(5000)];
+    }
+    
+    double log_size = [self axisKnobSizeFor:nKnobs min:x_min max:x_max];
+
+    // Now try to find the biggest "rounded" number in the underlying unit that is still
+    // close enough to the exact knob in log space.
+    // We define "close enough" as tolerance % of the distance between knobs in log space
+    // as long as the rounded number is within 3% of the distance between knobs, we prefer that
+    // to the log immplied number
+    double tolerance = 3.0;
+    
+    for (NSNumber * one in starting) {
+        double log_x = one.doubleValue;
+        double x = [self.underlyingUnit convertDouble:log_x fromUnit:self];
+        
+        double log_best = log_x;
+        double log_best_distance = 0.0;
+        
+        for (NSNumber * one in attempts) {
+            double knob = one.doubleValue;
+            double rounded = round(x/knob)*knob;
+            double log_rounded = [self.underlyingUnit convertDouble:rounded toUnit:self];
+            double distance = fabs(log_rounded - log_x);
+            if( distance < (tolerance*log_size / 100.0) && distance > log_best_distance) {
+                log_best = log_rounded;
+                log_best_distance = distance;
+            }
+        }
+        [rv addObject:@(log_best)];
+    }
+    
+    return rv;
+}
 @end

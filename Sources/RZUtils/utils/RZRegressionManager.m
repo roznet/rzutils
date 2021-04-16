@@ -28,7 +28,7 @@
 
 @interface RZRegressionManager ()
 @property (nonatomic,retain) NSString * testName;
-
+@property (nonatomic,retain) NSString * specifiedReferenceDirectory;
 @end
 
 @implementation RZRegressionManager
@@ -36,6 +36,7 @@
 #if ! __has_feature(objc_arc)
 -(void)dealloc{
     [_testName release];
+    [_specifiedReferenceDirectory release];
     [super dealloc];
 }
 #endif
@@ -46,10 +47,40 @@
     }
     return rv;
 }
+
 +(instancetype)managerForTestName:(NSString*)name{
     RZRegressionManager * rv = RZReturnAutorelease([[RZRegressionManager alloc] init]);
     if (rv) {
         rv.testName = name;
+    }
+    return rv;
+}
+
++(instancetype)managerForTestClass:(Class)cl
+                     directoryName:(NSString*)directory
+                 referenceFilePath:(NSString*)filePath{
+    RZRegressionManager * rv = RZReturnAutorelease([[RZRegressionManager alloc] init]);
+    if (rv) {
+        rv.testName = NSStringFromClass(cl);
+        rv.specifiedReferenceDirectory = [rv searchForReferenceDirectory:directory referenceFilePath:filePath];
+    }
+    return rv;
+}
+
+-(NSString*)searchForReferenceDirectory:(NSString*)directoryName referenceFilePath:(NSString*)filePath{
+    NSString * rv = nil;
+    
+    NSMutableArray<NSString*>*paths = [NSMutableArray arrayWithArray:[filePath pathComponents]];
+    [paths removeLastObject];
+    
+    while( paths.count > 0){
+        BOOL isDirectory = false;
+        
+        rv = [NSString pathWithComponents:[paths arrayByAddingObject:directoryName]];
+        if( [[NSFileManager defaultManager] fileExistsAtPath:rv isDirectory:&isDirectory] && isDirectory){
+            return rv;
+        }
+        [paths removeLastObject];
     }
     return rv;
 }
@@ -135,10 +166,15 @@
 }
 
 -(NSString*)referenceDirectory{
+    if( self.specifiedReferenceDirectory){
+        return self.specifiedReferenceDirectory;
+    }
+    
     NSString *envReferenceImageDirectory = [NSProcessInfo processInfo].environment[@"RZ_REFERENCE_OBJECT_DIR"];
     if (envReferenceImageDirectory) {
         return envReferenceImageDirectory;
     }
+        
     return [[NSBundle bundleForClass:self.class].resourcePath stringByAppendingPathComponent:@"ReferenceObjects"];
 }
 

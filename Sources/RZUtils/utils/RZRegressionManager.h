@@ -52,6 +52,15 @@
 +(instancetype)managerForTestName:(NSString*)name;
 
 /**
+ @brief instantiate a manager with test name from a class
+ @param cl the class to use for the name
+ @param directory the name of the directory to save objects in
+ @param referenceFilePath typically @__FILE__, the manager will look for directory along the path of that file
+ */
++(instancetype)managerForTestClass:(Class)cl directoryName:(NSString*)directory referenceFilePath:(NSString*)filePath;
+
+
+/**
  @discussion retrieve an object from a regression file. In record mode, the object passed in
     will be saved (and returned). selector and an identifier will be used to differentiate
     the name of the object saved. One can use _cmd as selector to use the current selector.

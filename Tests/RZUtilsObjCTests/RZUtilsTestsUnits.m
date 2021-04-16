@@ -329,32 +329,88 @@
     XCTAssertEqualWithAccuracy(min.value, 0.5, 1.e-10);
 }
 
+
+-(void)displayCalendarUnit:(GCUnitCalendarUnit*)unit knobs:(NSArray<NSNumber*>*)knobs{
+    NSInteger i = 0;
+    for (NSNumber * one in knobs) {
+        NSString * desc = [unit formatDouble:one.doubleValue];
+        NSDate * date = [NSDate dateWithTimeIntervalSinceReferenceDate:one.doubleValue];
+        
+        NSLog(@"%@: %@  (%@)", @(i), desc, date);
+        i++;
+    }
+}
+
 -(void)testCalendarUnit{
     NSCalendar * calculationCalendar = [NSCalendar currentCalendar];
     [calculationCalendar setTimeZone:[NSTimeZone timeZoneWithName:@"Europe/London"]];
     
-    NSDate * date = [NSDate dateForGarminModernString:@"2020-06-23 11:00:05"];
-    GCUnitCalendarUnit * cuY = [GCUnitCalendarUnit calendarUnit:NSCalendarUnitYear calendar:calculationCalendar referenceDate:nil];
-    GCUnitCalendarUnit * cuJul = [GCUnitCalendarUnit calendarUnit:NSCalendarUnitYear calendar:calculationCalendar referenceDate:date];
+    NSDate * start_date = [NSDate dateForGarminModernString:@"2020-06-23 11:00:05"];
+    NSDate * end_date   = [NSDate dateForGarminModernString:@"2021-04-22 11:00:05"];
+    NSCalendarUnit unit = NSCalendarUnitMonth;
     
-    NSUInteger nKnobs = 20;
-    double oneHour = 3600.;
-    double oneDay = 24.*oneHour;
-    double x_min = 10. * oneHour;
-    double x_max = oneDay * 364.0 + 11.* oneHour;
+    GCUnitCalendarUnit * cuY = [GCUnitCalendarUnit calendarUnit:unit calendar:calculationCalendar referenceDate:nil];
+    GCUnitCalendarUnit * cuJul = [GCUnitCalendarUnit calendarUnit:unit calendar:calculationCalendar referenceDate:end_date];
     
-    NSArray * knY = [cuY axisKnobs:nKnobs min:x_min max:x_max extendToKnobs:NO];
-    NSArray * knJul = [cuJul axisKnobs:nKnobs min:x_min max:x_max extendToKnobs:NO];
-    NSLog(@"%@", knY);
-    NSLog(@"%@", knJul);
+    NSUInteger nKnobs = 12;
     
-    for (NSNumber * knob in knY) {
-        NSLog(@" %@: %@", @(knob.doubleValue / oneDay), [cuY formatDouble:knob.doubleValue]);
-    }
-    for (NSNumber * knob in knJul) {
-        NSLog(@" %@: %@", @(knob.doubleValue / oneDay), [cuJul formatDouble:knob.doubleValue]);
-    }
-    NSLog(@"END");
+    double x_min = start_date.timeIntervalSinceReferenceDate;
+    double x_max = end_date.timeIntervalSinceReferenceDate;
+    
+    NSArray<NSNumber*> * knY = [cuY axisKnobs:nKnobs min:x_min max:x_max extendToKnobs:NO];
+    NSArray<NSNumber*> * knJul = [cuJul axisKnobs:nKnobs min:x_min max:x_max extendToKnobs:NO];
+    
+    [self displayCalendarUnit:cuY knobs:knY];
+    [self displayCalendarUnit:cuJul knobs:knJul];
+}
+
+
+-(void)testAxisKnobs{
+    RZRegressionManager * manager = [RZRegressionManager managerForTestClass:[self class] directoryName:@"ReferenceObjects" referenceFilePath:@__FILE__];
+    manager.recordMode = true;
+    NSSet * classes = [NSSet setWithObjects:[NSArray class], [NSNumber class], nil];
+    
+    void(^testOne)(GCUnit*,NSUInteger,double,double) = ^(GCUnit*unit,NSUInteger n, double x_min, double x_max){
+        NSString * identifier = [NSString stringWithFormat:@"%@[%@:%@]/%@", unit, @(x_min), @(x_max), @(n)];
+        NSArray<NSNumber*>*knobs = [unit axisKnobs:n min:x_min max:x_max extendToKnobs:YES];
+        
+        NSArray<NSString*>*formatted = [knobs arrayByMappingBlock:^(NSNumber*n){ return [unit formatDouble:n.doubleValue]; }];
+        
+        NSArray<NSString*>*retrieved = [manager retrieveReferenceObject:formatted forClasses:classes selector:_cmd identifier:identifier error:nil];
+        
+        XCTAssertEqualObjects(formatted, retrieved, @"axis %@", identifier);
+        NSLog(@"%@ %@", identifier, formatted);
+    };
+    
+    GCUnit * meter = [GCUnit meter];
+    GCUnit * second = [GCUnit second];
+    GCUnit * pace = [GCUnit minperkm];
+    GCUnit * logScaleSecond = [GCUnitLogScale logScaleUnitFor:second base:10. scaling:0.1 shift:1.];
+    GCUnit * logScaleMeter = [GCUnitLogScale logScaleUnitFor:meter base:10. scaling:1.0 shift:0.];
+
+    double sec_start = 20;
+    double sec_end   = 60*87;
+
+    testOne(meter, 5, 0.2, 9500);
+    testOne(pace,  5, 4.3, 5.8);
+
+    testOne(second, 8, sec_start, sec_end);
+
+    double log_sec_start = [second convertDouble:sec_start toUnit:logScaleSecond];
+    double log_sec_end   = [second convertDouble:sec_end toUnit:logScaleSecond];
+
+    testOne(logScaleSecond, 8, log_sec_start, log_sec_end);
+
+    double meter_start = 20;
+    double meter_end   = 100*1000*1000; // 100km
+
+    double log_meter_start = [meter convertDouble:sec_start toUnit:logScaleMeter];
+    double log_meter_end   = [meter convertDouble:sec_end toUnit:logScaleMeter];
+
+    testOne(logScaleMeter, 8, log_meter_start, log_meter_end);
+
+    //GCUnitDate, GCUnitTimeofDay, GCUnitCalendarUnit
+    
 }
 
 @end

@@ -32,6 +32,8 @@
  @return NSDateComponents if input string is value or nil
  */
 +(NSDateComponents*)dateComponentsFromString:(NSString*)str;
+
+-(NSString*)stringFromComponents;
 /**
  Return the value of the component corresponding to unit
  @param unit NSCalendarUnit should be NSCalendarUnitYear, NSCalendarUnitMonth or NSCalendarUnitWeekOfYear
@@ -46,4 +48,13 @@
  @return component or nil if not a known NSCalendarUnit
  */
 +(NSDateComponents*)dateComponentsForCalendarUnit:(NSCalendarUnit)aUnit withValue:(NSInteger)val;
+
+/**
+ apply a linear transform to a component. Helpful to inverse (mult -1) or increment
+ @param unit component to modify
+ @param mult multiplied to be applied to all components
+ @param add to be added to component that are non zero
+ @return new datacompoent with the same components
+ */
+-(void)multiplyComponent:(NSCalendarUnit)unit by:(NSInteger)mult andAdd:(NSInteger)add;
 @end

@@ -7,6 +7,7 @@
 //
 
 #import "GCUnitCalendarUnit.h"
+#import "NSDateComponents+RZHelper.h"
 
 @interface GCUnitCalendarUnit ()
 @property (nonatomic,retain) NSDateFormatter * dateFormatter;
@@ -65,7 +66,9 @@
 #endif
 
 
--(double)axisKnobSizeFor:(double)range numberOfKnobs:(NSUInteger)n{
+-(double)axisKnobSizeFor:(NSUInteger)n min:(double)x_min max:(double)x_max{
+    double range = x_max-x_min;
+    
     if (_calendarUnit == NSCalendarUnitWeekOfYear || _calendarUnit == NSCalendarUnitMonth) {
         double oneday = 24.*60.*60.;
         return ceil(range/n/oneday)* oneday;
@@ -73,7 +76,7 @@
         double onemonth = 24.*60.*60.*365./12.;
         return ceil(range/n/onemonth)* onemonth;
     }
-    return [super axisKnobSizeFor:range numberOfKnobs:n];
+    return [super axisKnobSizeFor:n min:x_min max:x_max];
 }
 
 -(NSArray*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend{

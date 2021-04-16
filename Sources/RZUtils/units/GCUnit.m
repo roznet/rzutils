@@ -28,6 +28,11 @@
 #include <math.h>
 #import "NSDictionary+RZHelper.h"
 #import "GCUnitCalendarUnit.h"
+#import "GCUnitDate.h"
+#import "GCUnitLinear.h"
+#import "GCUnitInverseLinear.h"
+#import "GCUnitTimeOfDay.h"
+#import "GCUnitElapsedSince.h"
 
 #define GCUNITFORKEY(my_unit_key) +(GCUnit*)my_unit_key{ return [GCUnit unitForKey:@#my_unit_key]; }
 
@@ -450,12 +455,20 @@ void registerUnits(){
 
 #pragma mark - Axis
 
--(double)axisKnobSizeFor:(double)range numberOfKnobs:(NSUInteger)n{
+
+
+-(double)axisKnobSizeFor:(NSUInteger)n min:(double)x_min max:(double)x_max{
+    double range = (x_max - x_min);
+
     // default
     if (n<2 || fabs(range)<1.e-12) {
         return 0.;
     }
+    // we know n > 0 now
+    double rv = range/n;
+
     if(self.axisBase != 0.){
+
         double count = n-1.;
         double base = self.axisBase;
 
@@ -475,7 +488,7 @@ void registerUnits(){
             roundedRange = 10.;
         }
 
-        return roundedRange*base*pow10x;
+        rv = roundedRange*base*pow10x;
     }else{
         double count = n-1.;
         double unrounded = range/count;
@@ -483,8 +496,19 @@ void registerUnits(){
 
         double pow10x = pow(10., x);
         double roundedRange = ceil(unrounded/pow10x)*pow10x;
-        return roundedRange;
+        rv = roundedRange;
     }
+    
+    // Try to widen when range is zero
+    if (fabs(rv)<EPS) {
+        rv = x_min/2.;
+        x_min /= 2.;
+        if (fabs(rv)<EPS) {
+            // if still 0, use arbitrary size, protect divition by 0
+            rv = 1.;
+        }
+    }
+    return rv;
 }
 
 -(NSArray*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min_input max:(double)x_max extendToKnobs:(BOOL)extend{
@@ -493,16 +517,7 @@ void registerUnits(){
 
     NSUInteger x_nKnobs = MIN(nKnobs, 100U);
 
-    double x_knobSize = [self axisKnobSizeFor:x_max-x_min numberOfKnobs:x_nKnobs];
-    if (fabs(x_knobSize)<EPS) {
-        x_knobSize = x_min/2.;
-        x_min /= 2.;
-        if (fabs(x_knobSize)<EPS) {
-            // if still 0, use arbitrary size, protect divition by 0
-            x_knobSize = 1.;
-        }
-    }
-
+    double x_knobSize = [self axisKnobSizeFor:nKnobs min:x_min max:x_max];
 
     double x_knob_min = floor(x_min/x_knobSize)*x_knobSize;
     double x_knob_max = x_knob_min;
@@ -1031,269 +1046,6 @@ GCUNITFORKEY(kilometer);
 
 @end
 
-#pragma mark -
-@implementation GCUnitLinear
-@synthesize multiplier,offset;
-
-+(GCUnitLinear*)unitLinearWithArray:(NSArray*)defs reference:(NSString*)ref multiplier:(double)aMult andOffset:(double)aOffset{
-    GCUnitLinear * rv = RZReturnAutorelease([[GCUnitLinear alloc] initWithArray:defs]);
-    if (rv) {
-        rv.multiplier = aMult;
-        rv.offset = aOffset;
-        rv.referenceUnitKey = ref;
-    }
-    return rv;
-}
-
--(double)valueToReferenceUnit:(double)aValue{
-    // Multiplier is how many reference unit in unit
-    // km mult=1000 m (ref unit=m)
-    // x km -> x * 1000 m
-    // x m  -> x / 1000 km
-    // miles mult = 1609m (ref unit=m)
-    // x miles -> x*1609 m
-    // x m -> x/1609m
-    // x km -> x*1000 m / 1609m
-    return aValue * multiplier + offset;
-}
--(double)valueFromReferenceUnit:(double)aValue{
-    return (aValue-offset) / multiplier;
-}
-
-@end
-
-#pragma mark -
-@implementation GCUnitInverseLinear
-@synthesize multiplier,offset;
-
-+(GCUnitInverseLinear*)unitInverseLinearWithArray:(NSArray*)defs reference:(NSString*)ref multiplier:(double)aMult andOffset:(double)aOffset{
-    GCUnitInverseLinear * rv = RZReturnAutorelease([[GCUnitInverseLinear alloc] initWithArray:defs]) ;
-    if (rv) {
-        rv.multiplier = aMult;
-        rv.offset = aOffset;
-        rv.referenceUnitKey = ref;
-    }
-    return rv;
-}
--(BOOL)betterIsMin{
-    return true;
-}
-
--(double)valueToReferenceUnit:(double)aValue{
-    return 1./aValue * multiplier + offset;
-}
--(double)valueFromReferenceUnit:(double)aValue{
-    return 1./ aValue * multiplier - offset;
-}
-
-@end
-
-#pragma mark -
-@implementation GCUnitDate
-@synthesize dateFormatter;
-#if ! __has_feature(objc_arc)
--(void)dealloc{
-    [_calendar release];
-    [dateFormatter release];
-    [super dealloc];
-}
-#endif
-
--(double)axisKnobSizeFor:(double)range numberOfKnobs:(NSUInteger)n{
-    if (self.useCalendarUnit) {
-        if (self.calendarUnit == NSCalendarUnitWeekOfYear || self.calendarUnit == NSCalendarUnitMonth) {
-            double oneday = 24.*60.*60.;
-            return ceil(range/n/oneday)* oneday;
-        }else if(self.calendarUnit == NSCalendarUnitYear){
-            double onemonth = 24.*60.*60.*365./12.;
-            return ceil(range/n/onemonth)* onemonth;
-        }
-    }
-    return [super axisKnobSizeFor:range numberOfKnobs:n];
-}
-
--(NSString*)formatDouble:(double)aDbl{
-    if (!dateFormatter) {
-        [self setDateFormatter:RZReturnAutorelease( [[NSDateFormatter alloc] init])];
-        dateFormatter.dateStyle = NSDateFormatterShortStyle;
-        dateFormatter.timeStyle = NSDateFormatterNoStyle;
-    }
-    if (self.useCalendarUnit) {
-        if (!self.calendar) {
-            self.calendar = [NSCalendar currentCalendar];
-
-        }
-    }
-    return [dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSinceReferenceDate:aDbl]];
-}
-
--(NSArray*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend{
-
-    if (self.useCalendarUnit && nKnobs > 0) {// don't bother for edge case
-        if (!self.calendar) {
-            self.calendar = [NSCalendar currentCalendar];
-        }
-        NSDate * startDate = nil;
-        NSTimeInterval interval;
-        [self.calendar rangeOfUnit:self.calendarUnit startDate:&startDate interval:&interval forDate:[NSDate dateWithTimeIntervalSinceReferenceDate:x_min]];
-        NSDateComponents * diff = [self.calendar components:self.calendarUnit fromDate:startDate toDate:[NSDate dateWithTimeIntervalSinceReferenceDate:x_max] options:0];
-
-        NSDateComponents * increment = RZReturnAutorelease([[NSDateComponents alloc] init]);
-
-        NSUInteger n = 1;
-        if (self.calendarUnit==NSCalendarUnitMonth) {
-            n = diff.month;
-            [increment setMonth:MAX(n/nKnobs,1)];
-        }else if (self.calendarUnit==NSCalendarUnitWeekOfYear){
-            n = diff.weekOfYear;
-            [increment setWeekOfYear:MAX(n/nKnobs,1)];
-        }else if (self.calendarUnit==NSCalendarUnitYear){
-            n = diff.year;
-            [increment setYear:MAX(n/nKnobs,1)];
-        }
-        n = MIN(n, 100)+1;
-        NSMutableArray * rv = [NSMutableArray arrayWithCapacity:n];
-        while (n > 0 && startDate.timeIntervalSinceReferenceDate<x_max) {
-            n--;// protection against big while loop
-            [rv addObject:@(startDate.timeIntervalSinceReferenceDate)];
-            startDate = [self.calendar dateByAddingComponents:increment toDate:startDate options:0];
-        }
-        if (startDate.timeIntervalSinceReferenceDate>=x_max) {
-            [rv addObject:@(x_max)];
-        }
-        return rv;
-    }else{
-        return [super axisKnobs:nKnobs min:x_min max:x_max extendToKnobs:extend];
-    }
-}
-
-
--(NSString*)formatDoubleNoUnits:(double)aDbl{
-    return [self formatDouble:aDbl];
-}
-@end
-
-@interface GCUnitElapsedSince ()
-@property (nonatomic,retain) NSDate * since;
-@property (nonatomic,retain) GCUnit * second;
-@end
-
-@implementation GCUnitElapsedSince
-
-#if ! __has_feature(objc_arc)
--(void)dealloc{
-    [_since release];
-    [_second release];
-    [super dealloc];
-}
-#endif
-
-+(GCUnitElapsedSince*)elapsedSince:(NSDate *)date{
-    GCUnitElapsedSince * rv = RZReturnAutorelease([[GCUnitElapsedSince alloc] init]);
-    if( rv ){
-        rv.key = [NSString stringWithFormat:@"elapsedSince(%@)", date];
-        rv.second = [GCUnit second];
-        rv.since = date;
-    }
-    return rv;
-}
-/*
--(double)axisKnobSizeFor:(double)range numberOfKnobs:(NSUInteger)n{
-    return [self.second axisKnobSizeFor:range numberOfKnobs:n];
-}
-
--(NSArray*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend{
-
-
-    return [self.second axisKnobs:nKnobs min:(x_min - self.since.timeIntervalSinceReferenceDate) max:(x_max-self.since.timeIntervalSinceReferenceDate) extendToKnobs:extend];
-}
-*/
--(NSString*)formatDouble:(double)aDbl addAbbr:(BOOL)addAbbr{
-    return [self.second formatDouble:(aDbl-self.since.timeIntervalSinceReferenceDate) addAbbr:addAbbr];
-}
-
-
-@end
-
-#pragma mark -
-@implementation GCUnitTimeOfDay
-#if ! __has_feature(objc_arc)
--(void)dealloc{
-    [_calendar release];
-    [_dateFormatter release];
-    [super dealloc];
-}
-#endif
-
--(NSString*)formatDouble:(double)aDbl addAbbr:(BOOL)addAbbr{
-    if (!_dateFormatter) {
-        [self setDateFormatter:RZReturnAutorelease( [[NSDateFormatter alloc] init])];
-        _dateFormatter.dateStyle = NSDateFormatterNoStyle;
-        _dateFormatter.timeStyle = NSDateFormatterShortStyle;
-    }
-    return [_dateFormatter stringFromDate:[NSDate dateWithTimeIntervalSinceReferenceDate:aDbl]];
-}
-
--(double)axisKnobSizeFor:(double)range numberOfKnobs:(NSUInteger)n{
-    return ceil(24./n);
-}
-
--(NSArray*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend{
-
-    if (nKnobs > 0) {// don't bother for edge case
-        // |----------------------|
-        // 0                      24
-        //
-        double size = ceil(24./(nKnobs))*3600.;
-        NSDate * startDate = nil;
-        NSTimeInterval interval;
-        if (!self.calendar) {
-            self.calendar = [NSCalendar currentCalendar];
-        }
-        [self.calendar rangeOfUnit:NSCalendarUnitDay startDate:&startDate interval:&interval forDate:[NSDate dateWithTimeIntervalSinceReferenceDate:x_min]];
-
-        NSMutableArray * rv = [NSMutableArray arrayWithCapacity:nKnobs];
-
-        for (NSUInteger i=0; i<nKnobs; i++) {
-            double x = MIN(startDate.timeIntervalSinceReferenceDate+ size*(i+1), startDate.timeIntervalSinceReferenceDate+24.*3600.);
-
-            [rv addObject:@(x)];
-        }
-        return rv;
-    }
-    return [super axisKnobs:nKnobs min:x_min max:x_max extendToKnobs:extend];
-}
 
 
 
-@end
-
-#pragma mark -
-@implementation GCUnitPerformanceRange
-
-+(GCUnitPerformanceRange*)performanceUnitFrom:(double)aMin to:(double)aMax{
-    GCUnitPerformanceRange * rv = RZReturnAutorelease([[self alloc] init]);
-    if (rv) {
-        rv.min = aMin;
-        rv.max = aMax;
-    }
-    return rv;
-}
--(NSString*)formatDouble:(double)aDbl addAbbr:(BOOL)addAbbr{
-    double val = (aDbl-self.min)/(self.max-self.min)*100.;
-    return [NSString stringWithFormat:@"%.1f", val];
-}
-
--(double)axisKnobSizeFor:(double)range numberOfKnobs:(NSUInteger)n{
-    double rv = [super axisKnobSizeFor:self.max-self.min
-                         numberOfKnobs:n];
-    return rv;
-}
-
--(NSArray*)axisKnobs:(NSUInteger)nKnobs min:(double)x_min max:(double)x_max extendToKnobs:(BOOL)extend{
-
-    NSArray * rv = [super axisKnobs:nKnobs min:self.min max:self.max extendToKnobs:false];
-    return rv;
-}
-
-@end

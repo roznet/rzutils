@@ -49,6 +49,26 @@
     }
     return dateComponents;
 }
+-(NSString*)stringFromComponents{
+    NSMutableArray<NSString*>*descs = [NSMutableArray array];
+    
+    NSInteger value = [self valueForComponent:NSCalendarUnitYear];
+    if( value != 0){
+        [descs addObject:[NSString stringWithFormat:@"%@y", @(value)]];
+    }
+    
+    value = [self valueForComponent:NSCalendarUnitMonth];
+    if( value != 0){
+        [descs addObject:[NSString stringWithFormat:@"%@m", @(value)]];
+    }
+
+    value = [self valueForComponent:NSCalendarUnitWeekOfYear];
+    if( value != 0){
+        [descs addObject:[NSString stringWithFormat:@"%@w", @(value)]];
+    }
+
+    return [descs componentsJoinedByString:@"+"];
+}
 
 -(NSInteger)monthWeekOrYear:(NSCalendarUnit)unit{
     if (unit==NSCalendarUnitYear) {
@@ -75,5 +95,10 @@
 
     }
     return rv;
+}
+
+-(void)multiplyComponent:(NSCalendarUnit)unit by:(NSInteger)mult andAdd:(NSInteger)add{
+    NSInteger value = [self valueForComponent:unit];
+    [self setValue:value*mult+add forComponent:unit];
 }
 @end
