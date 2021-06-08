@@ -123,6 +123,23 @@
     self.to = first;
 }
 
+-(BOOL)validate{
+    BOOL rv = true;
+    if( isnan(self.from.x) || isnan(self.from.y )){
+        rv = false;
+    }
+    if( isnan(self.to.x) || isnan(self.to.y )){
+        rv = false;
+    }
+    if( isnan(self.from_adj.x) || isnan(self.from_adj.y )){
+        rv = false;
+    }
+    if( isnan(self.to_adj.x) || isnan(self.to_adj.y )){
+        rv = false;
+    }
+    return rv;
+}
+
 -(BOOL)updateWithCGPoint:(CGPoint)point{
     self.from = self.to;
     self.to = point;
@@ -354,7 +371,9 @@
     path.lineWidth = lineWidth;
     
     if (CGRectContainsPoint(self.drawRect, simpleContext.to)) {
-        [path moveToPoint:simpleContext.to];
+        if( [simpleContext validate] ){
+            [path moveToPoint:simpleContext.to];
+        }
     }
 
     // First point in a path that need to be filled

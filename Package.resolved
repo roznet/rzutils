@@ -2,7 +2,7 @@
   "object": {
     "pins": [
       {
-        "package": "FMDB",
+        "package": "fmdb",
         "repositoryURL": "https://github.com/ccgus/fmdb",
         "state": {
           "branch": null,
