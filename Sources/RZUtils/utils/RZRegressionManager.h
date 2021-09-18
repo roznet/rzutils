@@ -57,7 +57,7 @@
  @param directory the name of the directory to save objects in
  @param referenceFilePath typically @__FILE__, the manager will look for directory along the path of that file
  */
-+(instancetype)managerForTestClass:(Class)cl directoryName:(NSString*)directory referenceFilePath:(NSString*)filePath;
++(instancetype)managerForTestClass:(Class)cl directoryName:(NSString*)directory referenceFilePath:(NSString*)referenceFilePath;
 
 
 /**

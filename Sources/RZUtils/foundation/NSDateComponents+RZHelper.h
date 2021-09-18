@@ -54,7 +54,6 @@
  @param unit component to modify
  @param mult multiplied to be applied to all components
  @param add to be added to component that are non zero
- @return new datacompoent with the same components
  */
 -(void)multiplyComponent:(NSCalendarUnit)unit by:(NSInteger)mult andAdd:(NSInteger)add;
 @end
