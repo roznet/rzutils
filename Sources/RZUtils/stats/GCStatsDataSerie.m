@@ -753,6 +753,46 @@ gcStatsRange maxRangeXOnly( gcStatsRange range1, gcStatsRange range2){
     return rv;
 }
 
+-(GCStatsDataSerie*)running:(gcStatsRunning)which{
+    GCStatsDataSerie * dup = [GCStatsDataSerie dataSerieWithPoints:dataPoints];
+    [dup sortByX];
+
+    NSMutableArray * cum = [NSMutableArray arrayWithCapacity:dataPoints.count];
+    double running = 0.;
+    double count = 0.;
+    BOOL started = false;
+    
+    for (GCStatsDataPoint * point in dup.dataPoints) {
+        
+        if( ! started ){
+            running = point.y_data;
+            count = 1;
+        }else{
+            switch(which){
+                case gcStatsRunningAvg:
+                    running = (running * count + point.y_data) / (count+1);
+                    break;
+                case gcStatsRunningMax:
+                    running = running < point.y_data ? point.y_data : running;
+                    break;
+                case gcStatsRunningMin:
+                    running = running < point.y_data ? running : point.y_data;
+                    break;
+                case gcStatsRunningSum:
+                    running += point.y_data;
+                    break;
+            }
+            count+=1;
+        }
+        started = true;
+        [cum addObject:[GCStatsDataPoint dataPointWithPoint:point andValue:running]];
+    }
+
+    GCStatsDataSerie * rv = RZReturnAutorelease([[GCStatsDataSerie alloc] init]);
+    rv.dataPoints = cum;
+    return rv;
+
+}
 -(GCStatsDataSerie*)sum{
     return [self sumAndDivideByCount:NO];
 }

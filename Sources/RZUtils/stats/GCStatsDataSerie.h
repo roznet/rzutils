@@ -70,6 +70,14 @@ typedef NS_ENUM(NSUInteger, gcStats) {
     gcStatsSum,
 };
 
+typedef NS_ENUM(NSUInteger, gcStatsRunning) {
+    gcStatsRunningSum,
+    gcStatsRunningAvg,
+    gcStatsRunningMax,
+    gcStatsRunningMin
+};
+
+
 typedef struct {
     double x_min;
     double x_max;
@@ -183,6 +191,7 @@ gcStatsRange maxRangeXOnly( gcStatsRange range1, gcStatsRange range2);
 -(GCStatsDataSerie*)cumulativeValue;
 -(GCStatsDataSerie*)xyCumulativeValue;
 -(GCStatsDataSerie*)filterForNonZeroIn:(GCStatsDataSerie*)other;
+-(GCStatsDataSerie*)running:(gcStatsRunning)stat;
 -(gcStatsRange)range;
 -(GCStatsDataPoint*)max;
 -(GCStatsDataPoint*)min;

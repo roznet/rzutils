@@ -138,6 +138,37 @@
     }
 }
 
+-(void)testCumulativeAndRunning{
+    GCStatsDataSerie * serie = [GCStatsDataSerie dataSerieWithArrayOfDouble:@[ @0.,@160.,
+                                                                               @2.,@170.,
+                                                                               @5.,@165.,
+                                                                               @6.,@175.,
+                                                                               @8.,@180.,
+                                                                               @10.,@185.]];
+    
+    GCStatsDataSerie * cumul = [serie cumulativeValue];
+    GCStatsDataSerie * running = [serie running:gcStatsRunningSum];
+    GCStatsDataSerie * runningmax = [serie running:gcStatsRunningMax];
+    GCStatsDataSerie * runningmin = [serie running:gcStatsRunningMin];
+    GCStatsDataSerie * runningavg = [serie running:gcStatsRunningAvg];
+    
+    XCTAssertEqualObjects(cumul,running, @"running sum or cumulative is same");
+    double max = [serie dataPointAtIndex:0].y_data;
+    double min = [serie dataPointAtIndex:0].y_data;
+    double eps = 1.0e-5;
+    for (NSUInteger i=0; i<cumul.count; i++) {
+        double sum = [cumul dataPointAtIndex:i].y_data;
+        max = MAX(max,[serie dataPointAtIndex:i].y_data);
+        min = MIN(min,[serie dataPointAtIndex:i].y_data);
+        
+        XCTAssertEqualWithAccuracy(sum, [running dataPointAtIndex:i].y_data,eps);
+        XCTAssertEqualWithAccuracy(sum / (1.0 + i), [runningavg dataPointAtIndex:i].y_data,eps);
+        XCTAssertEqualWithAccuracy(max, [runningmax dataPointAtIndex:i].y_data,eps);
+        XCTAssertEqualWithAccuracy(min, [runningmin dataPointAtIndex:i].y_data,eps);
+    }
+    
+}
+
 
 -(void)testStats{
     GCStatsDataSerie * serie = [[GCStatsDataSerie alloc] init];
