@@ -76,6 +76,7 @@
                                    withUnit:(NSCalendarUnit)aUnit
                               referenceDate:(NSDate*)refOrNil
                                 andCalendar:(NSCalendar*)calendar;
+-(GCStatsDataSerieWithUnit*)serieAfter:(NSDate*)afterDate;
 
 -(BOOL)isStrictlyIncreasingByX;
 

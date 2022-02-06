@@ -1830,6 +1830,20 @@ gcStatsRange maxRangeXOnly( gcStatsRange range1, gcStatsRange range2){
     return rv;
 }
 
+-(GCStatsDataSerie*)serieAfter:(NSDate*)afterDate{
+    GCStatsDataSerie * rv = RZReturnAutorelease([[GCStatsDataSerie alloc] init]);
+
+    for (GCStatsDataPoint * point in self.dataPoints) {
+        if ([point.date compare:afterDate] == NSOrderedAscending) {
+            continue;
+        }
+        [rv.dataPoints addObject:point];
+    }
+
+    return rv;
+
+}
+
 -(GCStatsDataSerie*)movingBestByUnitOf:(double)unit fillMethod:(gcStatsFillMethod)fill select:(gcStatsSelection)select statistic:(gcStats)statistic{
     return [self movingBestByUnitOf:unit fillMethod:fill select:select statistic:statistic fillStatistics:statistic];
 }

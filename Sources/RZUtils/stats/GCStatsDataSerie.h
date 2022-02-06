@@ -299,6 +299,12 @@ Compute difference serie
                       referenceDate:(NSDate*)refOrNil
                         andCalendar:(NSCalendar*)calendar;
 
+/**
+ Will truncate the serie for date later than a given date
+ @param afterDate NSDate* which is the first date to include
+ */
+-(GCStatsDataSerie*)serieAfter:(NSDate*)afterDate;
+
 /// Compute the best rolling value for the original serie. It will resample the serie such that
 /// each value is equally spaced by unit.
 /// @param unit size of the unit between best point

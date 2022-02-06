@@ -409,6 +409,16 @@
     return rv;
 
 }
+
+-(GCStatsDataSerieWithUnit*)serieAfter:(NSDate*)afterDate{
+    GCStatsDataSerieWithUnit * rv = RZReturnAutorelease([[GCStatsDataSerieWithUnit alloc] init]);
+    if (rv) {
+        rv.unit = self.unit;
+        rv.serie = [self.serie serieAfter:afterDate];
+    }
+    return rv;
+
+}
 -(BOOL)isStrictlyIncreasingByX{
     return [self.serie isStrictlyIncreasingByX];
 }
