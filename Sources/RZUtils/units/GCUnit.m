@@ -238,6 +238,7 @@ void registerUnits(){
             registerSimpl0( @[ @"rpm", @"Revolutions per Minute", @"rpm"]);
             registerSimple( @[ @"te", @"Training Effect", @""]);
             registerSimpl3( @[ @"if", @"Intensity Factor", @""]);
+            registerSimpl3( @[ @"kg/N", @"Running Efficiency", @"kg/N"]);
             
             registerLinea0(@[ @"mmHg", @"mmHg", @"mmHg"], @"mmHg", 1., 0.);
             registerLinea0(@[ @"cmHg", @"cmHg", @"cmHg"], @"cmHg", 10., 0.);
