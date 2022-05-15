@@ -127,6 +127,12 @@ void registerLinea1( NSArray * defs, NSString * ref, double m, double o){
     _unitsRegistry[defs[0]] = unit;
 }
 
+void registerLinea2( NSArray * defs, NSString * ref, double m, double o){
+    GCUnitLinear * unit = [GCUnitLinear unitLinearWithArray:defs reference:ref multiplier:m andOffset:o];
+    unit.format = gcUnitFormatTwoDigit;
+    _unitsRegistry[defs[0]] = unit;
+}
+
 void registerLinea0( NSArray * defs, NSString * ref, double m, double o){
     GCUnitLinear * unit = [GCUnitLinear unitLinearWithArray:defs reference:ref multiplier:m andOffset:o];
     unit.format = gcUnitFormatInteger;
@@ -240,8 +246,11 @@ void registerUnits(){
             registerSimpl3( @[ @"if", @"Intensity Factor", @""]);
             registerSimpl3( @[ @"kg/N", @"Running Efficiency", @"kg/N"]);
             
-            registerLinea0(@[ @"mmHg", @"mmHg", @"mmHg"], @"mmHg", 1., 0.);
-            registerLinea0(@[ @"cmHg", @"cmHg", @"cmHg"], @"cmHg", 10., 0.);
+            registerLinea0(@[ @"hPA", @"hPA", @"hPA"],   @"hPA", 1., 0.);
+            registerLinea2(@[ @"inHg", @"inHg", @"inHg"], @"hPA", 33.77, 0.);
+            
+            
+            
         }
         registerSimple( @[ @"percent", @"Percent", @"%"]);
         registerSimpl0( @[ @"dimensionless", @"Dimensionless", @""]);
@@ -273,6 +282,7 @@ void registerUnits(){
         registerLinear( @[ @"mps",        @"Meters per Second",   @"mps"  ],                 @"mps", 1.0,                 0.);
         registerLinear( @[ @"kph",        @"Kilometers per Hour", @"km/h" ],                 @"mps", 1000./3600.,         0.);
         registerLinear( @[ @"mph",        @"Miles per Hour",      @"mph"  ],                 @"mps", GCUNIT_MILES/3600.,  0.);
+        registerLinear( @[ @"knot",         @"Knots",               @"kt"  ],                  @"mps", 1852.0/3600.,        0.);
         registerInvLin( @[ @"secperkm",   @"Seconds per Kilometer",@"sec/km"],               @"mps", 1000.,               0.);
         registerInvLin( @[ @"minperkm",   @"Minutes per Kilometer",@"min/km", @"secperkm"],  @"mps", 60./3600.*1000.,     0.);
         registerInvLin( @[ @"secpermile", @"Seconds per Mile",    @"sec/mi" ],               @"mps", GCUNIT_MILES,        0.);
@@ -288,6 +298,7 @@ void registerUnits(){
         // Ascent speed
         registerLinea1( @[ @"meterperhour", @"Meters per hour",   @"m/h"  ],                @"mps", 1.0/3600.,               0.);
         registerLinea1( @[ @"feetperhour", @"Feet per hour",   @"ft/h"  ],                @"mps", GCUNIT_FOOT/3600.,         0.);
+        registerLinea1( @[ @"feetperminute", @"Feet per minute",   @"fpm"  ],                @"mps", GCUNIT_FOOT/60.,         0.);
 
         if (allUnitSet) {
             registerSimple( @[ @"mpm",        @"Meters per Minute",   @"mpm"]);
@@ -306,6 +317,7 @@ void registerUnits(){
         registerLinear( @[ @"foot",      @"Feet",       @"ft"],  @"meter", GCUNIT_FOOT,   0.0);
         registerLinear( @[ @"yard",      @"Yards",      @"yd"],  @"meter", GCUNIT_YARD,   0.0);
         registerLinear( @[ @"inch",      @"Inches",     @"in"],  @"meter", GCUNIT_INCHES, 0.0);
+        registerLinear( @[ @"nm",      @"Nautical Miles",     @"nm"],  @"meter", 1852.0, 0.0);
         registerLinea1( @[ @"centimeter",@"Centimeters",@"cm"],  @"meter", 0.01,          0.0);
         registerLinea1( @[ @"millimeter",@"Millimeter",@"mm"],   @"meter", 0.001,         0.0);
         registerLinea0( @[ @"floor",     @"Floor",      @"floors"],    @"meter", 3.0,           0.0);
@@ -330,6 +342,13 @@ void registerUnits(){
         registerDaCa(@"datemonth", NSDateFormatterNoStyle,     NSDateFormatterNoStyle, @"MMM yy", NSCalendarUnitMonth);
         registerDaCa(@"dateyear", NSDateFormatterNoStyle,     NSDateFormatterNoStyle, @"yyyy",    NSCalendarUnitYear);
 
+        // volumes
+        registerLinear( @[ @"liter", @"liter", @"l"],  @"liter", 1.0, 0.0);
+        registerLinear( @[ @"usgallon", @"US Gallon", @"gal"],  @"liter", 3.785411784, 0.0);
+        registerLinear( @[ @"gph", @"Gallon/hour", @"gph"], @"lph", 3.785411784, 0.0);
+        registerLinear( @[ @"lph", @"liter/hour", @"lph"], @"lph", 1.0, 0.0);
+
+        
         registerTofD(@"timeofday");
 
         registerCalUnit(@"weekly", NSCalendarUnitWeekOfYear);
