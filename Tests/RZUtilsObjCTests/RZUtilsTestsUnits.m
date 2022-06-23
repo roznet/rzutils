@@ -111,6 +111,20 @@
     }
 }
 
+-(void)testAviation{
+    GCUnit * avgasKg = GCUnit.avgasKilogram;
+    GCUnit * avgasPound = GCUnit.avgasPound;
+    GCUnit * usgallon = GCUnit.usgallon;
+    GCUnit * liter = GCUnit.liter;
+    
+    double gallonMass = [usgallon convertDouble:1.0 toUnit:avgasKg];
+    double gallonMassPound = [usgallon convertDouble:1.0 toUnit:avgasPound];
+    
+    XCTAssertEqualWithAccuracy(gallonMass, 3.78541178 * 0.71, 1.0e-5);
+    XCTAssertEqualWithAccuracy(gallonMassPound, [GCUnit.pound convertDouble:gallonMass fromUnit:GCUnit.kilogram], 1.0e-5);
+    
+}
+
 -(void)testUnits{
     GCUnit * meters = [GCUnit unitForKey:@"meter"];
     GCUnit * km     = [GCUnit unitForKey:@"kilometer"];

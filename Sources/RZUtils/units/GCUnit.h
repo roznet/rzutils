@@ -212,7 +212,10 @@ NS_ASSUME_NONNULL_BEGIN;
 +(GCUnit*)gigabyte;
 +(GCUnit*)terabyte;
 +(GCUnit*)byte;
-
++(GCUnit*)usgallon;
++(GCUnit*)liter;
++(GCUnit*)avgasKilogram;
++(GCUnit*)avgasPound;
 @end
 
 

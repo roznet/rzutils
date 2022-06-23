@@ -345,6 +345,8 @@ void registerUnits(){
         // volumes
         registerLinear( @[ @"liter", @"liter", @"l"],  @"liter", 1.0, 0.0);
         registerLinear( @[ @"usgallon", @"US Gallon", @"gal"],  @"liter", 3.785411784, 0.0);
+        registerLinear( @[ @"avgasKilogram", @"Avgas Kilogram", @"kg"],  @"liter", 1.0/0.71, 0.0);
+        registerLinear( @[ @"avgasPound", @"Avgas Pound", @"lbs"],  @"liter", GCUNIT_POUND / 0.71, 0.0);
         registerLinear( @[ @"gph", @"Gallon/hour", @"gph"], @"lph", 3.785411784, 0.0);
         registerLinear( @[ @"lph", @"liter/hour", @"lph"], @"lph", 1.0, 0.0);
 
@@ -1062,7 +1064,10 @@ GCUNITFORKEY(terabyte);
 GCUNITFORKEY(monthly);
 GCUNITFORKEY(rpm);
 GCUNITFORKEY(kilometer);
-
+GCUNITFORKEY(usgallon);
+GCUNITFORKEY(liter);
+GCUNITFORKEY(avgasKilogram)
+GCUNITFORKEY(avgasPound)
 
 @end
 
