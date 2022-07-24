@@ -148,6 +148,8 @@ NS_ASSUME_NONNULL_BEGIN;
 +(GCUnit*)dateshort;
 +(GCUnit*)weekly;
 +(GCUnit*)monthly;
++(GCUnit*)hobbshour;
++(GCUnit*)decimalhour;
 
 +(GCUnit*)kilocalorie;
 +(GCUnit*)joule;

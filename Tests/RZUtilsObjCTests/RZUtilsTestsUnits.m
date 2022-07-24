@@ -123,6 +123,18 @@
     XCTAssertEqualWithAccuracy(gallonMass, 3.78541178 * 0.71, 1.0e-5);
     XCTAssertEqualWithAccuracy(gallonMassPound, [GCUnit.pound convertDouble:gallonMass fromUnit:GCUnit.kilogram], 1.0e-5);
     
+    NSArray * tests = @[ @[ @(60.0*18), @"00:18", @"0.3"],
+                         @[ @(3600.0*1.3), @"01:18", @"1.3"]
+    ];
+    for (NSArray * one in tests) {
+        NSTimeInterval duration = [one[0] doubleValue];// 3600.0 * 1.3;
+        GCUnit * hobbshour = [GCUnit hobbshour];
+        GCUnit * decimalhour = [GCUnit decimalhour];
+        GCNumberWithUnit * time = [GCNumberWithUnit numberWithUnit:GCUnit.second andValue:duration];
+        
+        XCTAssertEqualObjects([[time convertToUnit:hobbshour] description], one[1]);
+        XCTAssertEqualObjects([[time convertToUnit:decimalhour] description], one[2]);
+    }
 }
 
 -(void)testUnits{

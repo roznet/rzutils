@@ -277,7 +277,11 @@ void registerUnits(){
         registerLinTim( @[ @"second", @"Seconds",     @""     ],          @"second", 1.,       0.);
         registerLinTim( @[ @"minute", @"Minutes",     @"",    @"second"], @"second", 60.,      0.);
         registerLinTim( @[ @"hour",   @"Hours",       @"",    @"minute"], @"second", 3600.,    0.);
-
+        //time for flying/aviation
+        registerLinTim( @[ @"hobbsminute", @"Minutes",     @"",    ], @"second", 60.,      0.);
+        registerLinTim( @[ @"hobbshour",   @"Hours",       @"",   @"hobbsminute" ], @"second", 3600.,    0.);
+        registerLinea1( @[ @"decimalhour",   @"Hours",       @"",    ], @"second", 3600.,    0.);
+        
         //speed
         registerLinear( @[ @"mps",        @"Meters per Second",   @"mps"  ],                 @"mps", 1.0,                 0.);
         registerLinear( @[ @"kph",        @"Kilometers per Hour", @"km/h" ],                 @"mps", 1000./3600.,         0.);
@@ -370,6 +374,7 @@ void registerUnits(){
         }
 
         // need both registered, so do after initial register;
+        [_unitsRegistry[@"hobbsminute"] setCompoundUnit:_unitsRegistry[@"hobbshour"]];
         [_unitsRegistry[@"minute"] setCompoundUnit:_unitsRegistry[@"hour"]];
         [_unitsRegistry[@"second"] setCompoundUnit:_unitsRegistry[@"minute"]];
         [_unitsRegistry[@"meter"]  setCompoundUnit:_unitsRegistry[@"kilometer"]];
@@ -1068,6 +1073,8 @@ GCUNITFORKEY(usgallon);
 GCUNITFORKEY(liter);
 GCUNITFORKEY(avgasKilogram)
 GCUNITFORKEY(avgasPound)
+GCUNITFORKEY(hobbshour)
+GCUNITFORKEY(decimalhour)
 
 @end
 
