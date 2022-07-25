@@ -161,6 +161,7 @@ NS_ASSUME_NONNULL_BEGIN;
 +(GCUnit*)inch;
 +(GCUnit*)meter;
 +(GCUnit*)kilometer;
++(GCUnit*)nm;
 
 +(GCUnit*)kph;
 +(GCUnit*)secpermile;

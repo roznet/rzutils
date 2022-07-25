@@ -1075,6 +1075,7 @@ GCUNITFORKEY(avgasKilogram)
 GCUNITFORKEY(avgasPound)
 GCUNITFORKEY(hobbshour)
 GCUNITFORKEY(decimalhour)
+GCUNITFORKEY(nm)
 
 @end
 
