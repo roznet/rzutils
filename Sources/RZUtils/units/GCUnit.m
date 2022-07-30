@@ -257,8 +257,9 @@ void registerUnits(){
             
             registerLinea0(@[ @"hPA", @"hPA", @"hPA"],   @"hPA", 1., 0.);
             registerLinea2(@[ @"inHg", @"inHg", @"inHg"], @"hPA", 33.77, 0.);
+            registerLinea1(@[ @"psi", @"Pound per Square Inch", @"psi"], @"hPA", 68.9475729318, 0.);
         }
-        registerSimple( @[ @"percent", @"Percent", @"%"]);
+        registerSimpl0( @[ @"percent", @"Percent", @"%"]);
         registerSimpl0( @[ @"dimensionless", @"Dimensionless", @""]);
 
         registerSimpl0( @[ @"step", @"Steps", @"s"]);
@@ -358,7 +359,7 @@ void registerUnits(){
         registerLinea1( @[ @"avgasKilogram", @"Avgas Kilogram", @"kg"],  @"liter", 1.0/0.71, 0.0);
         registerLinea1( @[ @"avgasPound", @"Avgas Pound", @"lbs"],  @"liter", GCUNIT_POUND / 0.71, 0.0);
         
-        registerLinear( @[ @"gph", @"Gallon/hour", @"gph"], @"lph", GCUNIT_USGALLON, 0.0);
+        registerLinea1( @[ @"gph", @"Gallon/hour", @"gph"], @"lph", GCUNIT_USGALLON, 0.0);
         registerLinear( @[ @"lph", @"liter/hour", @"lph"], @"lph", 1.0, 0.0);
 
         registerLinear( @[ @"nmpergallon", @"Nautical Mile/Gallon", @"nm/g"], @"kmpl", GCUNIT_NAUTICALMILE/1000.0/GCUNIT_USGALLON, 0.0);
