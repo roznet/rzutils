@@ -240,6 +240,7 @@ void registerUnits(){
             registerSimple( @[ @"volt", @"Volt", @""]);
             registerSimpl0( @[ @"watt", @"Watts", @"W"]);
             registerSimple( @[ @"kN/m", @"kN/m", @"kN/m"]);
+            registerSimpl3( @[ @"MHz", @"MHz", @"MHz"]);
 
             registerSimpl0( @[ @"strokesPerMinute", @"strokes/min", @"strokes/min"]);
 
@@ -256,9 +257,6 @@ void registerUnits(){
             
             registerLinea0(@[ @"hPA", @"hPA", @"hPA"],   @"hPA", 1., 0.);
             registerLinea2(@[ @"inHg", @"inHg", @"inHg"], @"hPA", 33.77, 0.);
-            
-            
-            
         }
         registerSimple( @[ @"percent", @"Percent", @"%"]);
         registerSimpl0( @[ @"dimensionless", @"Dimensionless", @""]);
@@ -329,13 +327,13 @@ void registerUnits(){
         registerLinear( @[ @"foot",      @"Feet",       @"ft"],  @"meter", GCUNIT_FOOT,   0.0);
         registerLinear( @[ @"yard",      @"Yards",      @"yd"],  @"meter", GCUNIT_YARD,   0.0);
         registerLinear( @[ @"inch",      @"Inches",     @"in"],  @"meter", GCUNIT_INCHES, 0.0);
-        registerLinear( @[ @"nm",      @"Nautical Miles",     @"nm"],  @"meter", GCUNIT_NAUTICALMILE, 0.0);
+        registerLinea0( @[ @"nm",      @"Nautical Miles",     @"nm"],  @"meter", GCUNIT_NAUTICALMILE, 0.0);
         registerLinea1( @[ @"centimeter",@"Centimeters",@"cm"],  @"meter", 0.01,          0.0);
         registerLinea1( @[ @"millimeter",@"Millimeter",@"mm"],   @"meter", 0.001,         0.0);
         registerLinea0( @[ @"floor",     @"Floor",      @"floors"],    @"meter", 3.0,           0.0);
         // special meterelevation that will not have coumpounding
         registerLinea0( @[ @"meterelevation",@"Meters (Elev.)",     @"m" ],  @"meter", 1.0,           0.0);
-        registerLinear( @[ @"footelevation", @"Feet (Elev.)",       @"ft"],  @"meter", GCUNIT_FOOT,   0.0);
+        registerLinea0( @[ @"footelevation", @"Feet (Elev.)",       @"ft"],  @"meter", GCUNIT_FOOT,   0.0);
 
         //mass
         registerLinear( @[ @"kilogram", @"Kilograms", @"kg"],  @"kilogram", 1.0, 0.0);

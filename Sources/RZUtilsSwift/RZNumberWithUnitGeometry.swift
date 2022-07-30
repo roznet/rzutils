@@ -234,17 +234,19 @@ extension CGSize {
             unitPoint.x += overflow
             numberPoint.x += overflow
         case .center:
-            unitPoint.x += overflow/2.0
-            numberPoint.x += overflow/2.0
+            // center means we center the totalSize in rect
+            let totalOverflow = rect.size.width - self.totalSize.width
+            unitPoint.x += totalOverflow/2.0
+            numberPoint.x += totalOverflow/2.0
         case .left:
             break
         }
         
         // first special case, if center, just center output
-        if case .center = self.alignment {
+        /*if case .center = self.alignment {
             // only move unit at the end of number (center other alignment don't mean much
             unitPoint.x += currentNumberSize.width + spacingSize.width
-        }else if !hasUnit && numberWithUnit.unit.format == gcUnitFormat.time {
+        }else*/ if !hasUnit && numberWithUnit.unit.format == gcUnitFormat.time {
             // Second Special case: time
             switch self.timeAlignment {
             case .withUnit:
