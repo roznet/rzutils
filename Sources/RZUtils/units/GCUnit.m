@@ -292,7 +292,7 @@ void registerUnits(){
         registerLinear( @[ @"mps",        @"Meters per Second",   @"mps"  ],                 @"mps", 1.0,                 0.);
         registerLinear( @[ @"kph",        @"Kilometers per Hour", @"km/h" ],                 @"mps", 1000./3600.,         0.);
         registerLinear( @[ @"mph",        @"Miles per Hour",      @"mph"  ],                 @"mps", GCUNIT_MILES/3600.,  0.);
-        registerLinear( @[ @"knot",         @"Knots",               @"kt"  ],                  @"mps", GCUNIT_NAUTICALMILE/3600.,        0.);
+        registerLinea0( @[ @"knot",         @"Knots",               @"kt"  ],                  @"mps", GCUNIT_NAUTICALMILE/3600.,        0.);
         registerInvLin( @[ @"secperkm",   @"Seconds per Kilometer",@"sec/km"],               @"mps", 1000.,               0.);
         registerInvLin( @[ @"minperkm",   @"Minutes per Kilometer",@"min/km", @"secperkm"],  @"mps", 60./3600.*1000.,     0.);
         registerInvLin( @[ @"secpermile", @"Seconds per Mile",    @"sec/mi" ],               @"mps", GCUNIT_MILES,        0.);
@@ -308,7 +308,7 @@ void registerUnits(){
         // Ascent speed
         registerLinea1( @[ @"meterperhour", @"Meters per hour",   @"m/h"  ],                @"mps", 1.0/3600.,               0.);
         registerLinea1( @[ @"feetperhour", @"Feet per hour",   @"ft/h"  ],                @"mps", GCUNIT_FOOT/3600.,         0.);
-        registerLinea1( @[ @"feetperminute", @"Feet per minute",   @"fpm"  ],                @"mps", GCUNIT_FOOT/60.,         0.);
+        registerLinea0( @[ @"feetperminute", @"Feet per minute",   @"fpm"  ],                @"mps", GCUNIT_FOOT/60.,         0.);
 
         if (allUnitSet) {
             registerSimple( @[ @"mpm",        @"Meters per Minute",   @"mpm"]);
