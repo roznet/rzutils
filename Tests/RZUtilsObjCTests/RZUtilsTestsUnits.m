@@ -135,6 +135,14 @@
         XCTAssertEqualObjects([[time convertToUnit:hobbshour] description], one[1]);
         XCTAssertEqualObjects([[time convertToUnit:decimalhour] description], one[2]);
     }
+    
+    GCNumberWithUnit * gph = [GCNumberWithUnit numberWithUnit:GCUnit.gph andValue:15.0];
+    NSLog(@"%@ %@", gph, [gph convertToUnit:GCUnit.lph]);
+    
+    GCNumberWithUnit * mperg = [GCNumberWithUnit numberWithUnit:GCUnit.milepergallon andValue:30.0];
+    XCTAssertEqualObjects(mperg.description, @"30.0 m/g");
+    XCTAssertEqualObjects([mperg convertToUnit:GCUnit.literper100km].description, @"7.84 l/100km");
+    XCTAssertEqualObjects([mperg convertToUnit:GCUnit.nmpergallon].description, @"26.1 nm/g");
 }
 
 -(void)testUnits{

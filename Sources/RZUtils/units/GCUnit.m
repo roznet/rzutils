@@ -50,6 +50,8 @@ static const double GCUNIT_FOOT = 1./3.2808399;
 static const double GCUNIT_YARD = 0.9144;
 static const double GCUNIT_INCHES = 1./39.3700787;
 static const double GCUNIT_JOULES = 1./4.184;// in kcal
+static const double GCUNIT_NAUTICALMILE = 1852.0; // in meter
+static const double GCUNIT_USGALLON = 3.785411784; // in liter
 
 static const double EPS = 1.e-10;
 
@@ -150,6 +152,12 @@ void registerInvLin( NSArray * defs, NSString * ref, double m, double o){
     unit.format = gcUnitFormatTime;
     _unitsRegistry[defs[0]] = unit;
 }
+void registerInvLi2( NSArray * defs, NSString * ref, double m, double o){
+    GCUnitInverseLinear * unit = [GCUnitInverseLinear unitInverseLinearWithArray:defs reference:ref multiplier:m andOffset:o];
+    unit.format = gcUnitFormatTwoDigit;
+    _unitsRegistry[defs[0]] = unit;
+}
+
 void registerDaCa( NSString * name, NSDateFormatterStyle dateStyle, NSDateFormatterStyle timeStyle, NSString * fmt, NSCalendarUnit cal){
     GCUnitDate * unit = [[GCUnitDate alloc] init];
     NSDateFormatter * formatter = [[NSDateFormatter alloc] init];
@@ -286,7 +294,7 @@ void registerUnits(){
         registerLinear( @[ @"mps",        @"Meters per Second",   @"mps"  ],                 @"mps", 1.0,                 0.);
         registerLinear( @[ @"kph",        @"Kilometers per Hour", @"km/h" ],                 @"mps", 1000./3600.,         0.);
         registerLinear( @[ @"mph",        @"Miles per Hour",      @"mph"  ],                 @"mps", GCUNIT_MILES/3600.,  0.);
-        registerLinear( @[ @"knot",         @"Knots",               @"kt"  ],                  @"mps", 1852.0/3600.,        0.);
+        registerLinear( @[ @"knot",         @"Knots",               @"kt"  ],                  @"mps", GCUNIT_NAUTICALMILE/3600.,        0.);
         registerInvLin( @[ @"secperkm",   @"Seconds per Kilometer",@"sec/km"],               @"mps", 1000.,               0.);
         registerInvLin( @[ @"minperkm",   @"Minutes per Kilometer",@"min/km", @"secperkm"],  @"mps", 60./3600.*1000.,     0.);
         registerInvLin( @[ @"secpermile", @"Seconds per Mile",    @"sec/mi" ],               @"mps", GCUNIT_MILES,        0.);
@@ -321,7 +329,7 @@ void registerUnits(){
         registerLinear( @[ @"foot",      @"Feet",       @"ft"],  @"meter", GCUNIT_FOOT,   0.0);
         registerLinear( @[ @"yard",      @"Yards",      @"yd"],  @"meter", GCUNIT_YARD,   0.0);
         registerLinear( @[ @"inch",      @"Inches",     @"in"],  @"meter", GCUNIT_INCHES, 0.0);
-        registerLinear( @[ @"nm",      @"Nautical Miles",     @"nm"],  @"meter", 1852.0, 0.0);
+        registerLinear( @[ @"nm",      @"Nautical Miles",     @"nm"],  @"meter", GCUNIT_NAUTICALMILE, 0.0);
         registerLinea1( @[ @"centimeter",@"Centimeters",@"cm"],  @"meter", 0.01,          0.0);
         registerLinea1( @[ @"millimeter",@"Millimeter",@"mm"],   @"meter", 0.001,         0.0);
         registerLinea0( @[ @"floor",     @"Floor",      @"floors"],    @"meter", 3.0,           0.0);
@@ -348,12 +356,17 @@ void registerUnits(){
 
         // volumes
         registerLinear( @[ @"liter", @"liter", @"l"],  @"liter", 1.0, 0.0);
-        registerLinear( @[ @"usgallon", @"US Gallon", @"gal"],  @"liter", 3.785411784, 0.0);
+        registerLinea1( @[ @"usgallon", @"US Gallon", @"gal"],  @"liter", GCUNIT_USGALLON, 0.0);
         registerLinear( @[ @"avgasKilogram", @"Avgas Kilogram", @"kg"],  @"liter", 1.0/0.71, 0.0);
         registerLinear( @[ @"avgasPound", @"Avgas Pound", @"lbs"],  @"liter", GCUNIT_POUND / 0.71, 0.0);
-        registerLinear( @[ @"gph", @"Gallon/hour", @"gph"], @"lph", 3.785411784, 0.0);
+        
+        registerLinear( @[ @"gph", @"Gallon/hour", @"gph"], @"lph", GCUNIT_USGALLON, 0.0);
         registerLinear( @[ @"lph", @"liter/hour", @"lph"], @"lph", 1.0, 0.0);
 
+        registerLinear( @[ @"nmpergallon", @"Nautical Mile/Gallon", @"nm/g"], @"kmpl", GCUNIT_NAUTICALMILE/1000.0/GCUNIT_USGALLON, 0.0);
+        registerLinear( @[ @"milepergallon", @"Mile/Gallon", @"m/g"], @"kmpl", GCUNIT_MILES/1000.0 / GCUNIT_USGALLON, 0.0);
+        registerLinear( @[ @"kmperliter", @"kilometer/liter", @"kmpl"], @"kmpl", 1.0, 0.0);
+        registerInvLi2( @[ @"literper100km", @"liter/100 km", @"l/100km"], @"kmpl", 100.0, 0.0);
         
         registerTofD(@"timeofday");
 
@@ -1071,12 +1084,20 @@ GCUNITFORKEY(rpm);
 GCUNITFORKEY(kilometer);
 GCUNITFORKEY(usgallon);
 GCUNITFORKEY(liter);
-GCUNITFORKEY(avgasKilogram)
-GCUNITFORKEY(avgasPound)
-GCUNITFORKEY(hobbshour)
-GCUNITFORKEY(decimalhour)
-GCUNITFORKEY(nm)
+GCUNITFORKEY(avgasKilogram);
+GCUNITFORKEY(avgasPound);
+GCUNITFORKEY(hobbshour);
+GCUNITFORKEY(decimalhour);
+GCUNITFORKEY(nm);
+GCUNITFORKEY(knot);
 
+GCUNITFORKEY(gph);
+GCUNITFORKEY(lph);
+
+GCUNITFORKEY(nmpergallon);
+GCUNITFORKEY(milepergallon);
+GCUNITFORKEY(kmperliter);
+GCUNITFORKEY(literper100km);
 @end
 
 

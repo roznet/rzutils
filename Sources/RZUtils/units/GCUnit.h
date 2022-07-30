@@ -219,6 +219,15 @@ NS_ASSUME_NONNULL_BEGIN;
 +(GCUnit*)liter;
 +(GCUnit*)avgasKilogram;
 +(GCUnit*)avgasPound;
++(GCUnit*)knot;
+
++(GCUnit*)gph;
++(GCUnit*)lph;
+
++(GCUnit*)nmpergallon;
++(GCUnit*)milepergallon;
++(GCUnit*)kmperliter;
++(GCUnit*)literper100km;
 @end
 
 
