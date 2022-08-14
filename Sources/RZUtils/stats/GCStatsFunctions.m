@@ -208,6 +208,12 @@
     return rv;
 }
 
++(GCStatsDataSerie*)xySerieForX:(GCStatsDataSerie*)xSerie andY:(GCStatsDataSerie*)ySerie{
+    GCStatsInterpFunction * interp = [GCStatsInterpFunction interpFunctionWithSerie:xSerie];
+    GCStatsDataSerie * xy = [interp xySerieWith:ySerie];
+    return xy;
+}
+
 +(GCStatsDataSerieWithUnit*)xySerieWithUnitForX:(GCStatsDataSerieWithUnit*)xSerie andY:(GCStatsDataSerieWithUnit*)ySerie{
     GCStatsInterpFunction * interp = [GCStatsInterpFunction interpFunctionWithSerie:xSerie.serie];
     GCStatsDataSerie * xy = [interp xySerieWith:ySerie.serie];

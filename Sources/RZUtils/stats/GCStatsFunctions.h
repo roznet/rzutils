@@ -75,6 +75,7 @@
 +(GCStatsInterpFunction*)interpFunctionWithSerie:(GCStatsDataSerie*)aSerie;
 
 -(GCStatsDataSerie*)xySerieWith:(GCStatsDataSerie*)other;
++(GCStatsDataSerie*)xySerieForX:(GCStatsDataSerie*)xSerie andY:(GCStatsDataSerie*)ySerie;
 +(GCStatsDataSerieWithUnit*)xySerieWithUnitForX:(GCStatsDataSerieWithUnit*)xSerie andY:(GCStatsDataSerieWithUnit*)ySerie;
 @end
 
