@@ -188,13 +188,16 @@
 
     NSDictionary *SSIDInfo = nil;
     for (NSString *interfaceName in interfaceNames) {
-        SSIDInfo = CFBridgingRelease(
-                                     CNCopyCurrentNetworkInfo((__bridge CFStringRef)interfaceName));
-
-        BOOL isNotEmpty = (SSIDInfo.count > 0);
-        if (isNotEmpty) {
-            break;
+        if (@available(macCatalyst 14.0, *)) {
+            SSIDInfo = CFBridgingRelease(CNCopyCurrentNetworkInfo((__bridge CFStringRef)interfaceName));
+            BOOL isNotEmpty = (SSIDInfo.count > 0);
+            if (isNotEmpty) {
+                break;
+            }
+        } else {
+            // older version will not return anything...
         }
+
     }
     if( SSIDInfo ){
         NSMutableDictionary * corrected = [NSMutableDictionary dictionaryWithDictionary:SSIDInfo];
