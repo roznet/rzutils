@@ -12,3 +12,15 @@ extension Collection {
         return indices.contains(index) ? self[index] : nil
     }
 }
+
+
+extension Calendar {
+    public func numberOfNights(from : Date, to: Date) -> Int {
+        let fromStart = self.startOfDay(for: from)
+        let toStart = self.startOfDay(for: to)
+        
+        let rv = dateComponents([.day], from: fromStart, to: toStart)
+        
+        return rv.day!
+    }
+}

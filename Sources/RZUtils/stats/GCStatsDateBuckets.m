@@ -42,20 +42,24 @@
 }
 #endif
 
-+(GCStatsDateBuckets*)statsDateBucketFor:(NSCalendarUnit)unit referenceDate:(NSDate*)refOrNil andCalendar:(NSCalendar*)cal{
-    GCStatsDateBuckets * rv = RZReturnAutorelease([[GCStatsDateBuckets alloc] init]);
-    if (rv) {
-        rv.calendarUnit = unit;
+-(GCStatsDateBuckets*)initFor:(NSCalendarUnit)unit referenceDate:(NSDate*)refOrNil andCalendar:(NSCalendar*)cal{
+    if( self = [super init]) {
+        self.calendarUnit = unit;
+        
         if (unit!=NSCalendarUnitYear&&unit!=NSCalendarUnitMonth&&unit!=NSCalendarUnitWeekOfYear) {
             RZLog(RZLogError, @"unsupported calendar unit %d, using month", (int)unit);
-            rv.calendarUnit = NSCalendarUnitMonth;
+            self.calendarUnit = NSCalendarUnitMonth;
         }
-        rv.calendar = cal;
+        self.calendar = cal;
         if (refOrNil) {
-            rv.refOrNil = refOrNil;
+            self.refOrNil = refOrNil;
         }
     }
-    return rv;
+    return self;
+
+}
++(GCStatsDateBuckets*)statsDateBucketFor:(NSCalendarUnit)unit referenceDate:(NSDate*)refOrNil andCalendar:(NSCalendar*)cal{
+    return RZReturnAutorelease([[GCStatsDateBuckets alloc] initFor:unit referenceDate:refOrNil andCalendar:cal]);
 }
 
 -(void)setComponentUnitFor:(NSInteger)value{

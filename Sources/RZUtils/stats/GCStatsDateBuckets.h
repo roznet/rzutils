@@ -25,26 +25,30 @@
 
 @import Foundation;
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface GCStatsDateBuckets : NSObject
 
-@property (nonatomic,retain) NSDate * refOrNil;
+@property (nonatomic,retain,nullable) NSDate * refOrNil;
 @property (nonatomic,assign) NSCalendarUnit calendarUnit;
 
-@property (nonatomic,retain) NSDate * bucketStart;
-@property (nonatomic,retain) NSDate * bucketEnd;
+@property (nonatomic,retain,nullable) NSDate * bucketStart;
+@property (nonatomic,retain,nullable) NSDate * bucketEnd;
 
-@property (nonatomic,retain) NSDateComponents * componentUnit;
+@property (nonatomic,retain,nullable) NSDateComponents * componentUnit;
 @property (nonatomic,retain) NSCalendar * calendar;
 
-
-+(GCStatsDateBuckets*)statsDateBucketFor:(NSCalendarUnit)unit referenceDate:(NSDate*)refOrNil andCalendar:(NSCalendar*)cal;
+-(GCStatsDateBuckets*)initFor:(NSCalendarUnit)unit referenceDate:(nullable NSDate*)refOrNil andCalendar:(NSCalendar*)cal;
++(GCStatsDateBuckets*)statsDateBucketFor:(NSCalendarUnit)unit referenceDate:(nullable NSDate*)refOrNil andCalendar:(NSCalendar*)cal;
 
 /// Will update the bucket to contains date.
 /// Will return true if the bucket changed and bucketStart/bucketEnd were updated, or false if it stayed the same.
 /// @param date to check
--(BOOL)bucket:(NSDate*)date;
+-(BOOL)bucket:(nonnull NSDate*)date;
 
 /// check if a date is in the current bucket
 /// @param date to check
--(BOOL)contains:(NSDate*)date;
+-(BOOL)contains:(nonnull NSDate*)date;
 @end
+
+NS_ASSUME_NONNULL_END
