@@ -258,6 +258,8 @@ void registerUnits(){
             registerLinea0(@[ @"hPA", @"hPA", @"hPA"],   @"hPA", 1., 0.);
             registerLinea2(@[ @"inHg", @"inHg", @"inHg"], @"hPA", 33.77, 0.);
             registerLinea1(@[ @"psi", @"Pound per Square Inch", @"psi"], @"hPA", 68.9475729318, 0.);
+            registerLinea0(@[ @"mmHg", @"mmHg", @"mmHg"], @"hPA", 1.3332239, 0.);
+            registerLinea0(@[ @"cmHg", @"cmHg", @"cmHg"], @"hPA", 13.332239, 0.);
         }
         registerSimpl0( @[ @"percent", @"Percent", @"%"]);
         registerSimpl0( @[ @"dimensionless", @"Dimensionless", @""]);
