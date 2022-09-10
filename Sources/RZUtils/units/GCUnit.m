@@ -261,7 +261,8 @@ void registerUnits(){
             registerLinea0(@[ @"mmHg", @"mmHg", @"mmHg"], @"hPA", 1.3332239, 0.);
             registerLinea0(@[ @"cmHg", @"cmHg", @"cmHg"], @"hPA", 13.332239, 0.);
         }
-        registerSimpl0( @[ @"percent", @"Percent", @"%"]);
+        registerSimple( @[ @"percent", @"Percent", @"%"]);
+        registerSimpl0( @[ @"percent0", @"Percent", @"%"]);
         registerSimpl0( @[ @"dimensionless", @"Dimensionless", @""]);
 
         registerSimpl0( @[ @"step", @"Steps", @"s"]);
