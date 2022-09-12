@@ -261,8 +261,8 @@ void registerUnits(){
             registerLinea0(@[ @"mmHg", @"mmHg", @"mmHg"], @"hPA", 1.3332239, 0.);
             registerLinea0(@[ @"cmHg", @"cmHg", @"cmHg"], @"hPA", 13.332239, 0.);
         }
-        registerSimple( @[ @"percent", @"Percent", @"%"]);
-        registerSimpl0( @[ @"percent0", @"Percent", @"%"]);
+        registerLinear( @[ @"percent", @"Percent", @"%"], @"percent", 1.0, 0.0);
+        registerLinea2( @[ @"percentdecimal", @"Percent", @"%"], @"percent", 100.0, 0.0);
         registerSimpl0( @[ @"dimensionless", @"Dimensionless", @""]);
 
         registerSimpl0( @[ @"step", @"Steps", @"s"]);
@@ -398,6 +398,7 @@ void registerUnits(){
         [_unitsRegistry[@"second"] setAxisBase:60.];
         [_unitsRegistry[@"minperkm"] setAxisBase:1./60.];
         [_unitsRegistry[@"minpermile"] setAxisBase:1./60.];
+        [_unitsRegistry[@"percentdecimal"] setScaling:100.0];
 
         [_unitsRegistry[@"step"] setEnableNumberAbbreviation:true];
 
