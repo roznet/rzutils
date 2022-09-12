@@ -45,6 +45,39 @@ final class RZUtilsTests: XCTestCase {
         }
     }
 
+    
+    func testFoundationUnits() {
+        struct ConvertTest {
+            let key : String
+            let convertKey : String
+            let value : Double
+            let eps : Double = 0.0001
+        }
+        let tests : [ConvertTest] = [
+            ConvertTest(key: "nmpergallon", convertKey: "literper100km", value: 10.0),
+            ConvertTest(key: "milepergallon", convertKey: "literper100km", value: 10.0),
+            ConvertTest(key: "dd", convertKey: "semicircle", value: 90.0),
+            ConvertTest(key: "minperkm", convertKey: "kph", value: 5.10),
+            ConvertTest(key: "minpermile", convertKey: "mph", value: 8.20),
+            ConvertTest(key: "foot", convertKey: "meter", value: 1500.0),
+            ConvertTest(key: "nm", convertKey: "foot", value: 2.0),
+            ConvertTest(key: "gph", convertKey: "lph", value: 15.0),
+            
+        ]
+        for one in tests {
+            let nu = GCNumberWithUnit(name: one.key, andValue: one.value)
+            let converted = nu.convert(toUnitName: one.convertKey)
+            if let unitFrom : Unit = nu.unit.foundationUnit(),
+               let unitTo : Unit = converted.unit.foundationUnit() {
+                let measure = NSMeasurement(doubleValue: one.value, unit: unitFrom)
+                let measureTo = measure.converting(to: unitTo)
+                
+                XCTAssertNotEqual(unitTo, unitFrom)
+                XCTAssertNotEqual(nu.value, converted.value, accuracy: one.eps)
+                XCTAssertEqual(converted.value,measureTo.value, accuracy: one.eps)
+            }
+        }
+    }
     static var allTests = [
         ("testExample", testExample),
     ]
