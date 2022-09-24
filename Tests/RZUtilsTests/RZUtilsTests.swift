@@ -54,6 +54,7 @@ final class RZUtilsTests: XCTestCase {
             let eps : Double = 0.0001
         }
         let tests : [ConvertTest] = [
+            ConvertTest(key: "min100m", convertKey: "mps", value: 10.0),
             ConvertTest(key: "nmpergallon", convertKey: "literper100km", value: 10.0),
             ConvertTest(key: "milepergallon", convertKey: "literper100km", value: 10.0),
             ConvertTest(key: "dd", convertKey: "semicircle", value: 90.0),
