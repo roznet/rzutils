@@ -375,8 +375,13 @@
         _gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         [_gregorianCalendar setTimeZone:[NSTimeZone defaultTimeZone]];
     }
-    return [_gregorianCalendar dateByAddingComponents:comp toDate:self options:0];
+    return [self dateByAddingGregorianComponents:comp calendar:_gregorianCalendar];
 }
+
+-(NSDate*)dateByAddingGregorianComponents:(NSDateComponents*)comp calendar:(NSCalendar*)calendar{
+    return [calendar dateByAddingComponents:comp toDate:self options:0];
+}
+
 
 -(NSDate*)endOfDayForCalendar:(NSCalendar*)cal{
     NSDateComponents * components = [cal components: (NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond)  fromDate:self];

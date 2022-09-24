@@ -52,6 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 -(NSComparisonResult)compareCalendarDay:(NSDate *)other include:(BOOL)flag calendar:(NSCalendar*)cal;
 -(NSString*)calendarUnitFormat:(NSCalendarUnit)aUnit;
 -(NSDate*)dateByAddingGregorianComponents:(NSDateComponents*)comp;
+-(NSDate*)dateByAddingGregorianComponents:(NSDateComponents*)comp calendar:(NSCalendar*)calendar;
 -(NSDate*)endOfDayForCalendar:(NSCalendar*)cal;
 
 @end

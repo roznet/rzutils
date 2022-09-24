@@ -47,7 +47,7 @@
     NSDate * testDate = [NSDate dateForRFC3339DateTimeString:@"2012-09-13T18:48:16.000Z"];
     NSArray * tests = @[@"1m", @"2012-10-13T18:48:16.000Z",
                         @"-1m",@"2012-08-13T18:48:16.000Z",
-                        @"2m", @"2012-11-13T18:48:16.000Z",
+                        @"2m", @"2012-11-13T19:48:16.000Z",
                         @"12m",@"2013-09-13T18:48:16.000Z",
                         @"1y", @"2013-09-13T18:48:16.000Z",
                         @"-1y",@"2011-09-13T18:48:16.000Z",
@@ -57,13 +57,17 @@
                         @"4w", @"2012-10-11T18:48:16.000Z",
                         @"-4w",@"2012-08-16T18:48:16.000Z",
                         ];
+    
+    NSCalendar * calculationCalendar = [NSCalendar currentCalendar];
+    [calculationCalendar setTimeZone:[NSTimeZone timeZoneWithName:@"Europe/London"]];
+
     for (NSUInteger i=0; i<[tests count]; i+=2) {
         NSString * mat = [tests objectAtIndex:i];
         NSString * datstr = [tests objectAtIndex:i+1];
         
         NSDateComponents * comp = [NSDateComponents dateComponentsFromString:mat];
         NSDate * expected = [NSDate dateForRFC3339DateTimeString:datstr];
-        NSDate * got = [testDate dateByAddingGregorianComponents:comp];
+        NSDate * got = [testDate dateByAddingGregorianComponents:comp calendar:calculationCalendar];
         XCTAssertEqualObjects(got, expected, @"date expected for %@", mat);
     }
 }
