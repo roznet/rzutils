@@ -24,3 +24,7 @@ extension Calendar {
         return rv.day!
     }
 }
+
+extension Measurement where UnitType : Dimension{
+    public var measurementDimension : Measurement<Dimension> { return Measurement<Dimension>(value: self.value, unit: self.unit) }
+}

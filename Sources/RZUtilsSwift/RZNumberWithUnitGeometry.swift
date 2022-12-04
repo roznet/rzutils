@@ -113,16 +113,39 @@ extension CGSize {
         self.accumulatedTotalSize = CGSize.zero
         self.count = 0
     }
-    
+
     @objc public func adjust(for numberWithUnit: GCNumberWithUnit,
                              numberAttribute : [NSAttributedString.Key:Any]? = nil,
                              unitAttribute : [NSAttributedString.Key:Any]? = nil){
+        let components = numberWithUnit.formatComponents()
+        self.adjust(components: components, numberAttribute: numberAttribute, unitAttribute: unitAttribute)
+    }
+
+    private func components<UnitType>(measurement : Measurement<UnitType>,
+                            formatter : MeasurementFormatter) -> [String] {
+        let components : [String] = [formatter.numberFormatter.string(from: measurement.value as NSNumber) ?? "",
+                                     formatter.string(from: measurement.unit)]
+        return components
+    }
+    
+    public func adjust<UnitType>(measurement : Measurement<UnitType>,
+                                 formatter : MeasurementFormatter,
+                             numberAttribute : [NSAttributedString.Key:Any]? = nil,
+                             unitAttribute : [NSAttributedString.Key:Any]? = nil){
         
+        
+        self.adjust(components: self.components(measurement: measurement, formatter: formatter), numberAttribute: numberAttribute, unitAttribute: unitAttribute)
+    }
+    
+    
+    private func adjust(components : [String],
+                        numberAttribute : [NSAttributedString.Key:Any]? = nil,
+                        unitAttribute : [NSAttributedString.Key:Any]? = nil){
+        
+        guard var fmtNoUnit = components.first else { return }
+
         let numberAttribute = numberAttribute ?? self.defaultNumberAttribute
         let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
-        
-        let components = numberWithUnit.formatComponents()
-        guard var fmtNoUnit = components.first else { return }
         
         if self.sign == .always && !fmtNoUnit.hasPrefix("-") {
             fmtNoUnit = "+" + fmtNoUnit
@@ -180,14 +203,39 @@ extension CGSize {
                            unitAttribute : [NSAttributedString.Key:Any]? = nil,
                            addUnit : Bool = true,
                            sign: DisplaySign = .natural) -> CGRect {
-        
+        let components = numberWithUnit.formatComponents()
+        return self.drawInRect(rect, components: components, numberAttribute: numberAttribute, unitAttribute: unitAttribute,
+                               addUnit: addUnit, sign: sign, isTime: numberWithUnit.unit.format == gcUnitFormat.time)
+    }
+    
+    @discardableResult
+    public func drawInRect<UnitType>(_ rect : CGRect,
+                           measurement : Measurement<UnitType>,
+                           formatter : MeasurementFormatter,
+                           numberAttribute : [NSAttributedString.Key:Any]? = nil,
+                           unitAttribute : [NSAttributedString.Key:Any]? = nil,
+                           addUnit : Bool = true,
+                           sign: DisplaySign = .natural) -> CGRect {
+        return self.drawInRect(rect, components: self.components(measurement: measurement, formatter: formatter),
+                               numberAttribute: numberAttribute, unitAttribute: unitAttribute,
+                               addUnit: addUnit, sign: sign, isTime: false)
+    }
+
+    @discardableResult
+    func drawInRect(_ rect : CGRect,
+                    components : [String],
+                    numberAttribute : [NSAttributedString.Key:Any]? = nil,
+                    unitAttribute : [NSAttributedString.Key:Any]? = nil,
+                    addUnit : Bool = true,
+                    sign: DisplaySign = .natural,
+                    isTime : Bool = false) -> CGRect {
+
         let unitAttribute = unitAttribute ?? self.defaultUnitAttribute
         let numberAttribute = numberAttribute ?? self.defaultNumberAttribute
         
         var numberPoint = rect.origin
         var unitPoint = rect.origin
         
-        let components = numberWithUnit.formatComponents()
         guard var fmtNoUnit = components.first else {
             return CGRect.zero
         }
@@ -246,7 +294,7 @@ extension CGSize {
         /*if case .center = self.alignment {
             // only move unit at the end of number (center other alignment don't mean much
             unitPoint.x += currentNumberSize.width + spacingSize.width
-        }else*/ if !hasUnit && numberWithUnit.unit.format == gcUnitFormat.time {
+        }else*/ if !hasUnit && isTime {
             // Second Special case: time
             switch self.timeAlignment {
             case .withUnit:

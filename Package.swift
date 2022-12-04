@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
+        .library(name: "RZData", targets: ["RZData" ] ),
         .library(name: "RZUtils", targets: ["RZUtils" ] ),
         .library(name: "RZUtilsUniversal", targets: ["RZUtilsUniversal" ] ),
         .library(name: "RZUtilsSwift", targets: ["RZUtilsSwift" ] ),
@@ -22,19 +23,27 @@ let package = Package(
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
+            name: "RZData"
+        ),
+        .target(
             name: "RZUtils",
-            dependencies: ["FMDB"]),
+            dependencies: ["FMDB"]
+        ),
         .target(
             name: "RZUtilsSwift",
-            dependencies: ["RZUtils"]),
+            dependencies: ["RZUtils", "RZData"]
+        ),
         .target(
             name: "RZUtilsUniversal",
-            dependencies: ["RZUtils"]),
+            dependencies: ["RZUtils"]
+        ),
         .testTarget(
             name: "RZUtilsTests",
-            dependencies: ["RZUtilsSwift", "RZUtils"]),
+            dependencies: ["RZUtilsSwift", "RZUtils", "RZData"]
+        ),
         .testTarget(
             name: "RZUtilsObjCTests",
-            dependencies: ["RZUtils", "RZUtilsUniversal"]),
+            dependencies: ["RZUtils", "RZUtilsUniversal"]
+        )
     ]
 )
