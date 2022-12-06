@@ -297,3 +297,4 @@ class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter 
     }
     
 }
+
