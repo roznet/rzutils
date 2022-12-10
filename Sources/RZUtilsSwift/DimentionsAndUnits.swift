@@ -45,6 +45,10 @@ extension UnitSpeed {
 
 }
 
+extension UnitEnergy {
+    public static let newtonMeter = UnitEnergy(symbol: "Nm", converter: UnitConverterLinear(coefficient: 1.0))
+    public static let footPound = UnitEnergy(symbol: "ft lbs", converter: UnitConverterLinear(coefficient: 1.35581795))
+}
 
 extension UnitAngle {
     public static let semicircle = UnitAngle(symbol: "sc", converter: UnitConverterLinear(coefficient: 180.0/2147483648.0))
@@ -79,6 +83,15 @@ public class UnitFuelFlow : Dimension {
         return gallonPerHour as! Self
     }
     
+}
+
+public class UnitAngularVelocity : Dimension {
+    public static let revolutionsPerMinute = UnitAngularVelocity(symbol: "rpm", converter: UnitConverterLinear(coefficient: 1.0))
+
+    public static override func baseUnit() -> Self {
+        return revolutionsPerMinute as! Self
+    }
+
 }
 
 public class UnitDimensionLess : Dimension {

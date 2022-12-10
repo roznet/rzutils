@@ -64,7 +64,7 @@ extension DataFrame  {
     /// - Parameter start:first date to start statistics or nil for first date in data
     /// - Parameter end: last date (included) to collect statistics or nil for last date in data
     /// - Returns: statisitics computed between dates
-    func extract<C>(indexes extractIndexes : [I],
+    public func extract<C>(indexes extractIndexes : [I],
                     createCollector : (F,T) -> C,
                     updateCollector : (inout C?,T) -> Void,
                     start : I? = nil,

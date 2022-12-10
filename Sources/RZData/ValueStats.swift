@@ -11,7 +11,7 @@ public struct ValueStats {
     public enum Metric : Hashable{
         case start,end
         case min,max,average
-        case total
+        case total,range
     }
 
     public private(set) var unit : Dimension?
@@ -34,6 +34,7 @@ public struct ValueStats {
     public var average : Double { return self.sum / Double(self.count) }
     public var weightedAverage : Double { return self.weightedSum / self.weight }
     public var total : Double { return self.end - self.start}
+    public var range : Double { return self.max - self.min }
     
     //MARK: - Create
     public init(value : Double, weight : Double = 1.0, unit : Dimension? = nil) {
@@ -86,6 +87,8 @@ public struct ValueStats {
             return self.start
         case .total:
             return self.total
+        case .range:
+            return self.range
         }
     }
     
