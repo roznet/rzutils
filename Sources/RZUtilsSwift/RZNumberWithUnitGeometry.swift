@@ -128,16 +128,27 @@ extension CGSize {
         return components
     }
     
+    private func components<UnitType>(measurement : Measurement<UnitType>,
+                            compound : CompoundMeasurementFormatter<UnitType>) -> [String] {
+        let components : [String] = [compound.format(from: measurement)]
+        return components
+    }
+
+    
     public func adjust<UnitType>(measurement : Measurement<UnitType>,
                                  formatter : MeasurementFormatter,
                              numberAttribute : [NSAttributedString.Key:Any]? = nil,
                              unitAttribute : [NSAttributedString.Key:Any]? = nil){
-        
-        
         self.adjust(components: self.components(measurement: measurement, formatter: formatter), numberAttribute: numberAttribute, unitAttribute: unitAttribute)
     }
-    
-    
+
+    public func adjust<UnitType>(measurement : Measurement<UnitType>,
+                                 compound : CompoundMeasurementFormatter<UnitType>,
+                             numberAttribute : [NSAttributedString.Key:Any]? = nil,
+                             unitAttribute : [NSAttributedString.Key:Any]? = nil){
+        self.adjust(components: self.components(measurement: measurement, compound: compound), numberAttribute: numberAttribute, unitAttribute: unitAttribute)
+    }
+
     private func adjust(components : [String],
                         numberAttribute : [NSAttributedString.Key:Any]? = nil,
                         unitAttribute : [NSAttributedString.Key:Any]? = nil){
@@ -219,6 +230,19 @@ extension CGSize {
         return self.drawInRect(rect, components: self.components(measurement: measurement, formatter: formatter),
                                numberAttribute: numberAttribute, unitAttribute: unitAttribute,
                                addUnit: addUnit, sign: sign, isTime: false)
+    }
+
+    @discardableResult
+    public func drawInRect<UnitType>(_ rect : CGRect,
+                           measurement : Measurement<UnitType>,
+                           compound : CompoundMeasurementFormatter<UnitType>,
+                           numberAttribute : [NSAttributedString.Key:Any]? = nil,
+                           unitAttribute : [NSAttributedString.Key:Any]? = nil,
+                           addUnit : Bool = true,
+                           sign: DisplaySign = .natural) -> CGRect {
+        return self.drawInRect(rect, components: self.components(measurement: measurement, compound: compound),
+                               numberAttribute: numberAttribute, unitAttribute: unitAttribute,
+                               addUnit: addUnit, sign: sign, isTime: true)
     }
 
     @discardableResult

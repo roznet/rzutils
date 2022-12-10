@@ -97,11 +97,17 @@ extension Measurement{
     }
 }
 
+extension UnitVolume {
+    public static let oneGallonInLiters : Double = 3.785411784
+
+    // use our own symbol instead of US G gal
+    public static let aviationGallon = UnitVolume(symbol: "gal", converter: UnitConverterLinear(coefficient: oneGallonInLiters))
+}
+
 extension UnitFuelEfficiency {
-    private static let oneGallonInLiters : Double = 3.785411784
     private static let oneNauticalMileInMeters : Double = 1852.0
     
-    public static let nauticalMilesPerGallon = UnitFuelEfficiency(symbol: "nm/gal", converter: UnitConverterInverseLinear(coefficient: oneGallonInLiters/oneNauticalMileInMeters*100.0*1000.0))
+    public static let nauticalMilesPerGallon = UnitFuelEfficiency(symbol: "nm/gal", converter: UnitConverterInverseLinear(coefficient: UnitVolume.oneGallonInLiters/oneNauticalMileInMeters*100.0*1000.0))
 }
 
 extension GCUnit {
@@ -137,7 +143,7 @@ extension GCUnit {
         case "nmpergallon": return UnitFuelEfficiency.nauticalMilesPerGallon
             
         case "liter": return UnitVolume.liters
-        case "usgallon": return UnitVolume.gallons
+        case "usgallon": return UnitVolume.aviationGallon
             
         case "kilogram": return UnitMass.kilograms
         case "pound": return UnitMass.pounds
@@ -201,6 +207,7 @@ extension Unit {
             
         case UnitVolume.liters.symbol: return GCUnit(forKey: "liter")
         case UnitVolume.gallons.symbol: return GCUnit(forKey: "usgallon")
+        case UnitVolume.aviationGallon.symbol: return GCUnit(forKey: "usgallon")
             
         case UnitMass.kilograms.symbol: return GCUnit(forKey: "kilogram")
         case UnitMass.pounds.symbol: return GCUnit(forKey: "pound")
@@ -235,18 +242,18 @@ func / (lhs : Measurement<UnitLength>, rhs : Measurement<UnitDuration>) -> Measu
     return Measurement<UnitSpeed>(value: mps, unit: UnitSpeed.metersPerSecond)
 }
 
-class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter {
-    enum JoinStyle {
+public class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter {
+    public enum JoinStyle {
         case simple
         case noUnits
     }
-    var minimumComponents : Int = 0
+    public var minimumComponents : Int = 0
     
-    var joinStyle : JoinStyle = .simple
-    var dimensions : [UnitType]
-    var separator : String
+    public var joinStyle : JoinStyle = .simple
+    public var dimensions : [UnitType]
+    public var separator : String
     
-    init(dimensions: [UnitType], separator: String = " ") {
+    public init(dimensions: [UnitType], separator: String = " ") {
         self.dimensions = dimensions
         self.separator = separator
         super.init()
@@ -257,7 +264,7 @@ class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter 
         fatalError("init(coder:) has not been implemented")
     }
     
-    func measurements(from measurement : Measurement<UnitType>) -> [Measurement<UnitType>] {
+    private func measurements(from measurement : Measurement<UnitType>) -> [Measurement<UnitType>] {
         var zeros : [Measurement<UnitType>] = []
         var values : [Measurement<UnitType>] = []
         
@@ -284,7 +291,7 @@ class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter 
         return values
     }
     
-    func format(from measurement: Measurement<UnitType>) -> String {
+    public func format(from measurement: Measurement<UnitType>) -> String {
         let values = self.measurements(from: measurement)
         switch self.joinStyle {
         case .simple:
