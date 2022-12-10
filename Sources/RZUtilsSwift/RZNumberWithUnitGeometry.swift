@@ -34,6 +34,7 @@ extension CGSize {
     }
     
     public enum UnitAlignment {
+        case hide
         case left
         case right
         case trailingNumber
@@ -123,9 +124,14 @@ extension CGSize {
 
     private func components<UnitType>(measurement : Measurement<UnitType>,
                             formatter : MeasurementFormatter) -> [String] {
-        let components : [String] = [formatter.numberFormatter.string(from: measurement.value as NSNumber) ?? "",
-                                     formatter.string(from: measurement.unit)]
-        return components
+        if self.unitAlignment == .hide {
+            let components : [String] = [formatter.numberFormatter.string(from: measurement.value as NSNumber) ?? ""]
+            return components
+        }else{
+            let components : [String] = [formatter.numberFormatter.string(from: measurement.value as NSNumber) ?? "",
+                                         formatter.string(from: measurement.unit)]
+            return components
+        }
     }
     
     private func components<UnitType>(measurement : Measurement<UnitType>,
@@ -345,6 +351,9 @@ extension CGSize {
                 unitPoint.x += numberSize.width + self.spacingSize.width + (self.unitSize.width - currentUnitSize.width)
             case .trailingNumber:
                 unitPoint.x = numberPoint.x + currentNumberSize.width + spacingSize.width
+            case .hide:
+                // nothing to do
+                break
             }
         }
         

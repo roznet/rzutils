@@ -60,7 +60,7 @@ class UnitHeartRate : Dimension {
 
 public class UnitPercent : Dimension {
     public static let percentPerHundred = UnitPercent(symbol: "%", converter: UnitConverterLinear(coefficient: 1.0/100.0))
-    public static let percentPerOne = UnitPercent(symbol: "%", converter: UnitConverterLinear(coefficient: 1.0))
+    public static let percentPerOne = UnitPercent(symbol: "", converter: UnitConverterLinear(coefficient: 1.0))
 
     public static override func baseUnit() -> Self {
         return percentPerOne as! Self
