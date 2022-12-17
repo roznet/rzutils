@@ -251,7 +251,9 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
     
     //MARK: - access
     public func has(fields : [F]) -> Bool {
-        return Set(arrayLiteral: fields).isSubset(of: Set(arrayLiteral: self.fields))
+        let queryFieldSet = Set(fields)
+        let thisFieldSet = Set(self.fields)
+        return queryFieldSet.isSubset(of: thisFieldSet)
     }
     
     public func has(field : F) -> Bool {
