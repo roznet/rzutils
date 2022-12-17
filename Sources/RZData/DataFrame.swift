@@ -250,6 +250,14 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
     }
     
     //MARK: - access
+    public func has(fields : [F]) -> Bool {
+        return Set(arrayLiteral: fields).isSubset(of: Set(arrayLiteral: self.fields))
+    }
+    
+    public func has(field : F) -> Bool {
+        return self.values[field] != nil
+    }
+    
     public func last(field : F, matching : ((T) -> Bool)? = nil) -> Point?{
         guard let fieldValues = self.values[field],
               let lastDate = self.indexes.last,
