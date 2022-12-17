@@ -90,8 +90,6 @@ NS_INLINE double TO_LOG_SCALE(double x,double base, double shift, double scale) 
     
     NSMutableArray*rv = [NSMutableArray array];
     
-    double attemptBase = self.axisBase != 0.0 ? self.axisBase : 100;
-    
     NSArray<NSNumber*>*attempts = nil;
     if( fabs(self.underlyingUnit.axisBase - 60.0) < 1.0E-5){
         // special case for seconds

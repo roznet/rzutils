@@ -507,8 +507,7 @@ void registerUnits(){
     if (n<2 || fabs(range)<1.e-12) {
         return 0.;
     }
-    // we know n > 0 now
-    double rv = range/n;
+    double rv = 0.0;
 
     if(self.axisBase != 0.){
 
@@ -545,7 +544,6 @@ void registerUnits(){
     // Try to widen when range is zero
     if (fabs(rv)<EPS) {
         rv = x_min/2.;
-        x_min /= 2.;
         if (fabs(rv)<EPS) {
             // if still 0, use arbitrary size, protect divition by 0
             rv = 1.;
