@@ -30,9 +30,14 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
         public let indexes : [I]
         public let values : [T]
         
+        public var first : Point? { guard let i = indexes.first, let v = values.first else { return nil }; return Point(index: i, value: v) }
+        public var last : Point? { guard let i = indexes.last, let v = values.last else { return nil }; return Point(index: i, value: v) }
+        public var count : Int { return indexes.count }
+        
         public func dropFirst(_ k : Int) -> Column {
             return Column(indexes: [I]( self.indexes.dropFirst(k) ), values: [T]( self.values.dropFirst(k)) )
         }
+        
         public init(indexes: [I], values: [T]) {
             self.indexes = indexes
             self.values = values
@@ -64,6 +69,44 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
     public init() {
         indexes = []
         values = [:]
+    }
+    
+    public init(indexes : [I], fields : [F], rows : [[T]]){
+        self.indexes = []
+        self.values = [:]
+        
+        guard indexes.first != nil else {
+            return
+        }
+        
+        var lastindex = indexes.first!
+        
+        self.indexes.reserveCapacity(indexes.capacity)
+        
+        for field in fields {
+            self.values[field] = []
+            self.values[field]?.reserveCapacity(indexes.capacity)
+        }
+        
+        for (index,row) in zip(indexes,rows) {
+            if index < lastindex {
+                self.indexes.removeAll(keepingCapacity: true)
+                for field in fields {
+                    self.values[field]?.removeAll(keepingCapacity: true)
+                }
+            }
+            // edge case date is repeated
+            if self.indexes.count == 0 || index != lastindex {
+                // for some reason doing it manually here is much faster than calling function on dataframe?
+                self.indexes.append(index)
+                for (field,element) in zip(fields,row) {
+                    //self.values[field, default: []].append(element)
+                    self.values[field]?.append(element)
+                }
+
+                lastindex = index
+            }
+        }
     }
     
     private init(indexes : [I], values: [F:[T]], fields: [F]) throws{
@@ -132,6 +175,7 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
     public mutating func unsafeFastAppend(fields : [F], elements : [T], for index : I) {
         self.indexes.append(index)
         for (field,element) in zip(fields,elements) {
+            //self.values[field, default: []].append(element)
             self.values[field, default: []].append(element)
         }
     }
