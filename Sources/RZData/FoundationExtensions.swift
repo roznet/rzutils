@@ -28,3 +28,15 @@ extension Calendar {
 extension Measurement where UnitType : Dimension{
     public var measurementDimension : Measurement<Dimension> { return Measurement<Dimension>(value: self.value, unit: self.unit) }
 }
+
+extension DispatchQueue {
+    @discardableResult
+    public static func synchronized<T>(_ lock: AnyObject, closure:() -> T) -> T {
+        objc_sync_enter(lock)
+        defer { objc_sync_exit(lock) }
+
+        return closure()
+    }
+
+
+}
