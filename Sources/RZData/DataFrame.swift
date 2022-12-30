@@ -42,6 +42,11 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
             self.indexes = indexes
             self.values = values
         }
+        public subscript(_ idx : Int) -> T? {
+            return self.values.indices.contains(idx) ? self.values[idx] : nil
+        }
+
+        
     }
     
     //MARK: - stored property

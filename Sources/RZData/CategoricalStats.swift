@@ -8,7 +8,7 @@
 import Foundation
 
 public struct CategoricalStats<CategoricalValue : Hashable>{
-    public enum Metric : Hashable {
+    public enum Metric : String {
         case start
         case end
         case mostFrequent

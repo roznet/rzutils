@@ -8,7 +8,7 @@
 import Foundation
 
 public struct ValueStats {
-    public enum Metric : Hashable{
+    public enum Metric : String{
         case start,end
         case min,max,average
         case total,range
