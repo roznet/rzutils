@@ -263,6 +263,12 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
         return rv
     }
     
+    public mutating func add(field : F, column : Column) {
+        if indexes == column.indexes {
+            self.values[field] = column.values
+        }
+    }
+    
     //MARK: - Transform
     
     /// Returned array sliced from start to end.
