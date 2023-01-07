@@ -289,7 +289,7 @@
             return color;
         }
     }
-    return [RZColor whiteColor];
+    return [RZColor systemBackgroundColor];
 }
 
 -(RZColor*)useForegroundColor{
@@ -299,7 +299,7 @@
             return color;
         }
     }
-    return [RZColor blackColor];
+    return [RZColor labelColor];
 }
 
 -(RZColor*)graphColor:(NSUInteger)idx{
@@ -873,7 +873,7 @@
 @implementation GCSimpleGraphDefaultDisplayConfig
 
 -(RZColor*)colorForSerie:(NSUInteger)idx{
-    return [RZColor blackColor];
+    return [RZColor labelColor];
 }
 
 -(CGFloat)lineWidth:(NSUInteger)idx{
