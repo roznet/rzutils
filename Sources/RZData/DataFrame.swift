@@ -45,9 +45,8 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
         public subscript(_ idx : Int) -> T? {
             return self.values.indices.contains(idx) ? self.values[idx] : nil
         }
-
-        
     }
+    
     
     //MARK: - stored property
     public private(set) var indexes : [I]
@@ -563,6 +562,10 @@ extension DataFrame.Column : Sequence {
     public func makeIterator() -> ColumnIterator {
         return ColumnIterator(self)
     }
+}
+
+extension DataFrame.Column where T : Hashable {
+    public var uniqueValues : [T] { return Array(Set(self.values)) }
 }
 
 //MARK: - Coordinate specialisation
