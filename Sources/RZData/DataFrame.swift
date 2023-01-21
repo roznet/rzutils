@@ -154,7 +154,7 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
             indexes.append(index)
         }
     }
-    
+
     private mutating func updateField(field : F, element : T) throws {
         values[field, default: []].append(element)
 
