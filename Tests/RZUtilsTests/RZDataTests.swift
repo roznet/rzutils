@@ -39,9 +39,53 @@ final class RZDataTests: XCTestCase {
         let first = df.reducedToCommonIndex(indexes: [-2,-1,0])
         XCTAssertEqual(first.indexes, [0])
         XCTAssertEqual(first.values["b"], [10])
-
-        
     }
 
+    func testMerge() {
+        let df1 = DataFrame<Int,Int,String>(indexes: [0,2,4,6],
+                                           values: ["a":[10,11,12,13],
+                                                    "b":[100,101,102,103]])
+        let df2 = DataFrame<Int,Int,String>(indexes: [1,3,5,7],
+                                           values: ["a":[20,21,22,23],
+                                                    "b":[200,201,202,203],
+                                                    "c":[0,0,0,0]])
+        let df3 = DataFrame<Int,Int,String>(indexes: [7,8,9,10],
+                                           values: ["a":[30,31,32,33],
+                                                    "b":[300,301,302,303]])
+        let df4 = DataFrame<Int,Int,String>(indexes: [0,1,4,5],
+                                           values: ["a":[40,41,42,43],
+                                                    "b":[400,401,402,403]])
+        let dfe = DataFrame<Int,Int,String>()
 
+        let m1w2 = df1.merged(with: df2)
+        XCTAssertEqual(m1w2.indexes, [0,1,2,3,4,5,6,7])
+        XCTAssertEqual(m1w2.values["a"], [10,20,11,21,12,22,13,23])
+        XCTAssertFalse(m1w2.has(field: "c"))
+        
+        let m2w1 = df2.merged(with: df1)
+        XCTAssertEqual(m2w1.indexes, [0,1,2,3,4,5,6,7])
+        XCTAssertEqual(m2w1.values["a"], [10,20,11,21,12,22,13,23])
+        XCTAssertFalse(m1w2.has(field: "c"))
+        
+        let m1w3 = df1.merged(with: df3)
+        XCTAssertEqual(m1w3.indexes, [0,2,4,6,7,8,9,10])
+        XCTAssertEqual(m1w3.values["b"], [100,101,102,103,300,301,302,303])
+
+        let m3w1 = df3.merged(with: df1)
+        XCTAssertEqual(m3w1.indexes, [0,2,4,6,7,8,9,10])
+        XCTAssertEqual(m3w1.values["b"], [100,101,102,103,300,301,302,303])
+        
+        let m1we = df1.merged(with: dfe)
+        XCTAssertEqual(m1we.indexes, df1.indexes)
+        XCTAssertEqual(m1we.values["a"], df1.values["a"])
+
+        let mew1 = dfe.merged(with: df1)
+        XCTAssertEqual(mew1.indexes, df1.indexes)
+        XCTAssertEqual(mew1.values["a"], df1.values["a"])
+
+        let m1w4 = df1.merged(with: df4)
+        XCTAssertEqual(m1w4.indexes, [0,1,2,4,5,6])
+        XCTAssertEqual(m1w4.values["b"], [100,401,101,102,403,103])
+
+    }
 }

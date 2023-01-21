@@ -59,6 +59,7 @@
 #define RZImage NSImage
 #define RZView NSView
 #define RZBezierPath NSBezierPath
+#define systemBackgroundColor windowBackgroundColor
 #endif
 
 #if TARGET_IPHONE_SIMULATOR

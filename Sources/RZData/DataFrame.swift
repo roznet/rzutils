@@ -268,6 +268,75 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
         }
     }
     
+    //MARK: - Merge
+    
+    public func merged(with other : DataFrame) -> DataFrame{
+        // iterate over indexes of other
+        guard self.indexes.first != nil else { return other }
+        guard other.indexes.first != nil else { return self }
+        
+        var thisBound = (lower : 0, upper: 0)
+        var otherBound = (lower : 0, upper : 0)
+        
+        var thisIndex = (lower: self.indexes.first!, upper: self.indexes.first!)
+        var otherIndex = (lower: other.indexes.first!, upper: other.indexes.first!)
+        
+        var mergedIndex : [I] = []
+        var mergedValues : [F:[T]] = [:]
+        let fields = Set(self.fields).intersection(other.fields)
+        
+        for field in fields {
+            mergedValues[field] = []
+        }
+        
+        while thisBound.upper < self.indexes.count || otherBound.upper < other.indexes.count {
+            // we handle == case for index such that it picks up self...
+            while (thisIndex.upper <= otherIndex.lower || otherBound.upper == other.indexes.count) && thisBound.upper < self.indexes.count {
+                // if equal, move other as well as we will pick up value from self
+                if thisIndex.upper == otherIndex.lower {
+                    otherBound.lower += 1
+                    otherBound.upper = otherBound.lower
+                    if otherBound.lower < other.indexes.count {
+                        otherIndex.lower = other.indexes[otherBound.lower]
+                        otherIndex.upper = otherIndex.lower
+                    }
+                }
+                thisBound.upper += 1
+                if thisBound.upper < self.indexes.count {
+                    thisIndex.upper = self.indexes[thisBound.upper]
+                }// else leave it at the last value
+                
+            }
+            if thisBound.lower < thisBound.upper {
+                mergedIndex.append(contentsOf: self.indexes[thisBound.lower..<thisBound.upper])
+                for field in fields {
+                    if let slice = self.values[field]?[thisBound.lower..<thisBound.upper] {
+                        mergedValues[field]?.append(contentsOf: slice)
+                    }
+                }
+                thisBound.lower = thisBound.upper
+                thisIndex.lower = thisIndex.upper
+            }
+            while (otherIndex.upper < thisIndex.lower || thisBound.upper == self.indexes.count) && otherBound.upper < other.indexes.count {
+                otherBound.upper += 1
+                if otherBound.upper < other.indexes.count {
+                    otherIndex.upper = other.indexes[otherBound.upper]
+                }// else leave it at last value
+            }
+            if otherBound.lower < otherBound.upper {
+                mergedIndex.append(contentsOf: other.indexes[otherBound.lower..<otherBound.upper])
+                for field in fields {
+                    if let slice = other.values[field]?[otherBound.lower..<otherBound.upper] {
+                        mergedValues[field]?.append(contentsOf: slice)
+                    }
+                }
+                otherBound.lower = otherBound.upper
+                otherIndex.lower = otherIndex.upper
+            }
+        }
+        return DataFrame(indexes: mergedIndex, values: mergedValues)
+    }
+    
     //MARK: - Transform
     
     /// Returned array sliced from start to end.
