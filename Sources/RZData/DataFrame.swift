@@ -168,6 +168,13 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
         try self.updateField(field: field, element: element)
     }
     
+    public mutating func unsafeFastAppend(field : F, element : T, for index : I) throws {
+        if indexes.last == nil || indexes.last! != index {
+            self.indexes.append(index)
+        }
+        values[field, default: []].append(element)
+    }
+    
     public mutating func append(fieldsValues : [F:T], for index : I) throws {
         try self.indexCheckAndUpdate(index: index)
 
@@ -270,6 +277,16 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
     
     //MARK: - Merge
     
+    mutating public func merge(with other : DataFrame){
+        let merged = self.merged(with: other)
+
+        self.indexes = merged.indexes
+        self.values = merged.values
+    }
+
+    /// merge two dataframes
+    /// if the indexes are not the same, the result will be a dataframe with the union of the indexes
+    /// if the indexes are the same, the values will use the values from the first dataframe
     public func merged(with other : DataFrame) -> DataFrame{
         // iterate over indexes of other
         guard self.indexes.first != nil else { return other }
@@ -371,7 +388,43 @@ public struct DataFrame<I : Comparable,T,F : Hashable> {
     public func dataFrame(for fields : [F]) throws -> DataFrame {
         return try DataFrame(indexes: self.indexes, values: self.values, fields:    fields)
     }
-    
+
+    //MARK: - Extend
+    mutating public func extend(output : F, input : F, transform : (T) -> T) {
+        guard let inputValues = self.values[input] else { return }
+        var outputValues : [T] = []
+        outputValues.append(contentsOf: inputValues.map(transform))
+        self.values[output] = outputValues
+    }
+
+    mutating public func extendMultiple(output : F, input : [F], transform : ([T]) -> T) {
+        var outputValues : [T] = []
+        for index in self.indexes.indices {
+            var inputValues : [T] = []
+            for field in input {
+                if let value = self.values[field]?[index] {
+                    inputValues.append(value)
+                }
+            }
+            outputValues.append(transform(inputValues))
+        }
+        self.values[output] = outputValues
+    }
+
+    //MARK: - Filter
+
+    public func filter(input : F, filter : (T) -> Bool) -> DataFrame {
+        guard let inputValues = self.values[input] else { return self }
+        let indexes = inputValues.enumerated().filter { filter($0.element) }.map { $0.offset }
+        var rv = DataFrame(fields: self.fields)
+        for index in indexes {
+            rv.indexes.append(self.indexes[index])
+            for (field,value) in self.values {
+                rv.values[field]?.append(value[index])
+            }
+        }
+        return rv
+    }
     //MARK: - access
     public func has(fields : [F]) -> Bool {
         let queryFieldSet = Set(fields)

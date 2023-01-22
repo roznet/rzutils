@@ -88,4 +88,24 @@ final class RZDataTests: XCTestCase {
         XCTAssertEqual(m1w4.values["b"], [100,401,101,102,403,103])
 
     }
+
+    func testExtend() {
+        var df1 = DataFrame<Int,Int,String>(indexes: [0,2,4,6],
+                                           values: ["a":[10,11,12,13],
+                                                    "b":[100,101,102,103]])
+        df1.extend(output : "c", input: "a", transform: { $0 * 2 })
+        XCTAssertEqual(df1.values["c"], [20,22,24,26])
+
+        df1.extendMultiple(output : "c", input: ["a","b"], transform: { $0[0] + $0[1] })
+        XCTAssertEqual(df1.values["c"], [110,112,114,116])
+    }
+
+    func testFilter() {
+        let df1 = DataFrame<Int,Int,String>(indexes: [0,2,4,6],
+                                           values: ["a":[10,11,12,13],
+                                                    "b":[100,101,102,103]])
+        let df2 = df1.filter(input: "a") { $0 % 2 == 0 }
+        XCTAssertEqual(df2.values["a"], [10,12])
+        XCTAssertEqual(df2.values["b"], [100,102])
+    }
 }
