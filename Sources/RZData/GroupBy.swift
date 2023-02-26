@@ -126,7 +126,8 @@ extension DataFrame  {
 extension DataFrame where T == Double {
     
     /// Will extract and compute parameters
-    /// will compute statistics between date in the  array returning one stats per dates, the stats will start form the first value up to the
+    /// will compute statistics `ValueStats` between date in the  array returning one stats per dates,
+    /// the stats will start form the first value up to the
     /// first date in the input value, if the last date is before the end of the data, the end is skipped
     /// if a start is provided the stats starts from the first available row of data
     /// - Parameter dates: array of dates corresponding to the first date of the leg
