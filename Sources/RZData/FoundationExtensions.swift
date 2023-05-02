@@ -40,3 +40,13 @@ extension DispatchQueue {
 
 
 }
+
+extension URLResponse {
+    public var stringEncoding : String.Encoding? {
+        if let textEncodingName = self.textEncodingName {
+            let cfEncoding = CFStringConvertIANACharSetNameToEncoding(textEncodingName as CFString)
+            return String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(cfEncoding))
+        }
+        return nil
+    }
+}
