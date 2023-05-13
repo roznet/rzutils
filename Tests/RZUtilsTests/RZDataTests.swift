@@ -108,4 +108,46 @@ final class RZDataTests: XCTestCase {
         XCTAssertEqual(df2.values["a"], [10,12])
         XCTAssertEqual(df2.values["b"], [100,102])
     }
+    
+    func testQuantiles() {
+
+        let qs : [Double] = [0.1,0.5]
+        let input : [String:[Double]] = [ "a" :  [1.0,2.0,3.0,4.0], "b" : [1.0, 10.0, 100.0, 100.0] ]
+        let expected : [String:[Double]] = [ "a" : [1.3, 2.5], "b":[3.7, 55.0]]
+        
+        guard let sample = input.values.first else { XCTAssertTrue(false); return }
+        
+        let df = DataFrame<Int,Double,String>(indexes: Array(0...sample.count), values: input)
+        let quantiles = df.quantiles(qs)
+        
+        for (col,e) in expected {
+            if let qcalculated = quantiles[col]?.values {
+                XCTAssertEqual(qcalculated, e)
+            }else{
+                XCTAssertTrue(false)
+            }
+        }
+    }
+    
+    func testCumSum() {
+        let input : [String:[Double]] = [ "a" : [1.0,2.0,3.0,4.0],
+                                          "b" : [1.0, 10.0, 100.0, 100.0] ]
+        
+        guard let sample = input.values.first else { XCTAssertTrue(false); return }
+
+        let df = DataFrame<Int,Double,String>(indexes: Array(0...sample.count),
+                                               values: input)
+        
+        let cumsum = df.cumsum()
+        for (col,array) in input {
+            let cumulativeSum = array.reduce(into: [Double]()) { result, number in
+                if let last = result.last {
+                    result.append(last + number)
+                } else {
+                    result.append(number)
+                }
+            }
+            XCTAssertEqual(cumulativeSum, cumsum[col]?.values)
+        }
+    }
 }
