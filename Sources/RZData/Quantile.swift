@@ -9,14 +9,10 @@ import Foundation
 import Foundation
 
 extension Array where Element == Double {
-    // Sorts the array in ascending order
-    func sortedArray() -> [Double] {
-        return self.sorted()
-    }
 
     // Function to compute quantile matchin excel R7 method
     public func quantile(_ percentile: Double) -> Double? {
-        let sorted = self.sortedArray()
+        let sorted = self.sorted()
         guard !sorted.isEmpty else { return nil } // Return nil if array is empty
         if sorted.count == 1 { return sorted[0] } // Return the only element if array contains only one element
         
