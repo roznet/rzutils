@@ -137,25 +137,71 @@ final class RZDataTests: XCTestCase {
         }
     }
     
+    func buildSampleDf<T>(input : [String:[T]]) -> DataFrame<Int,T,String>? {
+        guard let sample = input.values.first else { XCTAssertTrue(false); return nil }
+
+        let df = DataFrame<Int,T,String>(indexes: Array(0...sample.count),
+                                               values: input)
+        return df
+    }
+    
     func testCumSum() {
-        let input : [String:[Double]] = [ "a" : [1.0,2.0,3.0,4.0],
-                                          "b" : [1.0, 10.0, 100.0, 100.0] ]
         
+            /*
         guard let sample = input.values.first else { XCTAssertTrue(false); return }
 
         let df = DataFrame<Int,Double,String>(indexes: Array(0...sample.count),
                                                values: input)
-        
-        let cumsum = df.cumsum()
-        for (col,array) in input {
-            let cumulativeSum = array.reduce(into: [Double]()) { result, number in
-                if let last = result.last {
-                    result.append(last + number)
-                } else {
-                    result.append(number)
+         */
+        let input : [String:[Double]] = [ "a" : [1.0,2.0,3.0,4.0],
+                                          "b" : [1.0, 10.0, 100.0, 100.0] ]
+
+        if let df = self.buildSampleDf(input: input){
+            let cumsum = df.cumsum()
+            for (col,array) in input {
+                let cumulativeSum = array.reduce(into: [Double]()) { result, number in
+                    if let last = result.last {
+                        result.append(last + number)
+                    } else {
+                        result.append(number)
+                    }
+                }
+                XCTAssertEqual(cumulativeSum, cumsum[col]?.values)
+            }
+        }
+    }
+    
+    func testDescribe() {
+        let valInput = [ "a" : [1.0,2.0,3.0,4.0],
+                         "b" : [1.0, 10.0, 100.0, 1000.0] ]
+        if let df = self.buildSampleDf(input: valInput) {
+            let des = df.describeValues()
+            
+            for (col,vals) in valInput {
+                if let stats = des[col] {
+                    XCTAssertEqual(stats.count,vals.count)
+                    XCTAssertEqual(stats.max,vals.max())
+                    XCTAssertEqual(stats.min,vals.min())
+                    XCTAssertEqual(stats.sum,vals.reduce(0, +))
+                }else{
+                    XCTAssertTrue(false)
                 }
             }
-            XCTAssertEqual(cumulativeSum, cumsum[col]?.values)
+        }
+
+        let catInput = [ "a" : ["a","a","b","c"],
+                         "b" : ["a","b","c"] ]
+        if let df = self.buildSampleDf(input: catInput) {
+            let des = df.describeCategorical()
+            for (col,vals) in catInput {
+                if let stats = des[col] {
+                    XCTAssertEqual(stats.count,vals.count)
+                    XCTAssertEqual(stats.start,vals.first)
+                    XCTAssertEqual(stats.end,vals.last)
+                }else{
+                    XCTAssertTrue(false)
+                }
+            }
         }
     }
 }

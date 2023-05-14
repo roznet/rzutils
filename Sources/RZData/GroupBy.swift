@@ -124,6 +124,25 @@ extension DataFrame  {
 }
 
 extension DataFrame where T == Double {
+    public func describeValues(units : [F:Dimension] = [:]) -> [F:ValueStats] {
+        var rv : [F:ValueStats] = [:]
+        guard self.indexes.count > 0 else { return rv }
+        
+        for (col,vals) in self.values {
+            var stats : ValueStats? = nil
+            for val in vals {
+                if stats == nil {
+                    stats = ValueStats(value: val,unit: units[col])
+                }else{
+                    stats?.update(double: val)
+                }
+            }
+            
+            rv[col] = stats
+        }
+        return rv
+    }
+    
     
     /// Will extract and compute parameters
     /// will compute statistics `ValueStats` between date in the  array returning one stats per dates,
@@ -195,6 +214,26 @@ extension DataFrame where T == Double {
 
 extension DataFrame where T : Hashable {
     
+    public func describeCategorical() -> [F:CategoricalStats<T>] {
+        var rv : [F:CategoricalStats<T>] = [:]
+        guard self.indexes.count > 0 else { return rv }
+        
+        for (col,vals) in self.values {
+            var stats : CategoricalStats<T>? = nil
+            for val in vals {
+                if stats == nil {
+                    stats = CategoricalStats(value: val)
+                }else{
+                    stats?.update(value: val)
+                }
+            }
+            if let stats = stats {
+                rv[col] = stats
+            }
+        }
+        return rv
+    }
+
     /// Will extract and compute parameters
     /// will compute statistics between date in the  array returning one stats per dates, the stats will start form the first value up to the
     /// first date in the input value, if the last date is before the end of the data, the end is skipped
