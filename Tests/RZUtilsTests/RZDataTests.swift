@@ -188,6 +188,35 @@ final class RZDataTests: XCTestCase {
                 }
             }
         }
+        
+        // Constructed such that weighted sum is equal to first element
+        let weights = [16.0, 8.0, 4.0, 2.0]
+        let weightInput = [ "a" : [4.0, 2.0, 6.0, 8.0],
+                            "b" : [8.0, 4.0, 12.0, 16.0],
+                            "w" : weights]
+        if let df = self.buildSampleDf(input: weightInput) {
+            let des = df.describeValues(weight: "w")
+            XCTAssertNil(des["w"])
+            
+            for (col,vals) in weightInput {
+                if col == "w" {
+                    continue
+                }
+                if let stats = des[col] {
+                    XCTAssertEqual(stats.count,vals.count)
+                    XCTAssertEqual(stats.max,vals.max())
+                    XCTAssertEqual(stats.min,vals.min())
+                    XCTAssertEqual(stats.sum,vals.reduce(0, +))
+                    if let first = vals.first {
+                        XCTAssertEqual(stats.weightedSum,first * weights.reduce(0,+))
+                        XCTAssertEqual(stats.weightedAverage,first)
+                    }
+                }else{
+                    XCTAssertTrue(false)
+                }
+            }
+
+        }
 
         let catInput = [ "a" : ["a","a","b","c"],
                          "b" : ["a","b","c"] ]

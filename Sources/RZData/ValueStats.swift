@@ -59,6 +59,7 @@ public struct ValueStats {
                 self.min = Swift.min(self.min,value)
                 self.count += 1
                 self.weight += weight
+                self.weightedSum += value * weight
             }
         }else{
             self.start = value

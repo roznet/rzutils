@@ -124,17 +124,28 @@ extension DataFrame  {
 }
 
 extension DataFrame where T == Double {
-    public func describeValues(units : [F:Dimension] = [:]) -> [F:ValueStats] {
+    public func describeValues(weight column : F? = nil, units : [F:Dimension] = [:]) -> [F:ValueStats] {
         var rv : [F:ValueStats] = [:]
         guard self.indexes.count > 0 else { return rv }
         
+        var weights : [T] = []
+        if let column = column, let weightValues = self.values[column] {
+            weights = weightValues
+        }
+        
         for (col,vals) in self.values {
+            if let column = column, col == column {
+                // don't do stats on the weight column
+                continue
+            }
             var stats : ValueStats? = nil
-            for val in vals {
+            let hasWeights = (weights.count == vals.count)
+            for (idx,val) in vals.enumerated() {
+                let weight = hasWeights ? weights[idx] : 1.0
                 if stats == nil {
-                    stats = ValueStats(value: val,unit: units[col])
+                    stats = ValueStats(value: val, weight: weight, unit: units[col])
                 }else{
-                    stats?.update(double: val)
+                    stats?.update(double: val, weight: weight)
                 }
             }
             
