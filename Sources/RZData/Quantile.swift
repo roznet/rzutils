@@ -9,9 +9,14 @@ import Foundation
 import Foundation
 
 extension Array where Element == Double {
-
-    // Function to compute quantile matchin excel R7 method
-    public func quantile(_ percentile: Double) -> Double? {
+    public enum QuantileInterpolationMethod {
+        case linear
+        case lower
+        case higher
+        case midpoint
+    }
+    // Function to compute quantile matchin excel R7 method and matching pandas methods
+    public func quantile(_ percentile: Double, method: QuantileInterpolationMethod = .linear) -> Double? {
         let sorted = self.sorted()
         guard !sorted.isEmpty else { return nil } // Return nil if array is empty
         if sorted.count == 1 { return sorted[0] } // Return the only element if array contains only one element
@@ -23,22 +28,24 @@ extension Array where Element == Double {
         if h == Double(hFloor) {
             return sorted[hFloor]
         } else {
-            return sorted[hFloor] + (h - Double(hFloor)) * (sorted[hCeil] - sorted[hFloor])
+            switch method {
+            case .linear:
+                return sorted[hFloor] + (h - Double(hFloor)) * (sorted[hCeil] - sorted[hFloor])
+            case .lower:
+                return sorted[hFloor]
+            case .higher:
+                return sorted[hCeil]
+            case .midpoint:
+                return (sorted[hFloor] + sorted[hCeil]) / 2
+            }
         }
     }
 }
 
 extension DataFrame where T == Double {
+    public typealias QuantileInterpolationMethod = Array<Double>.QuantileInterpolationMethod
     
-    public enum QuantileInterpolation {
-        case linear
-        case lowest
-        case highest
-        case nearest
-        case mid
-    }
-    
-    public func quantiles(_ quantiles : [Double], interpolation : QuantileInterpolation = .linear) -> DataFrame<T,T,F> {
+    public func quantiles(_ quantiles : [Double], interpolation : QuantileInterpolationMethod = .linear) -> DataFrame<T,T,F> {
         var calculated : [F:[Double]] = [:]
         guard self.count > 0 else { return DataFrame<T,T,F>(indexes: [], values: [:]) }
         
@@ -55,34 +62,23 @@ extension DataFrame where T == Double {
                     one.append(sorted[0])
                     continue
                 }
-
-                switch interpolation {
-                case .linear:
-                    let h = q * (Double(sorted.count) - 1)
-                    let hFloor = Int(floor(h))
-                    let hCeil = Int(ceil(h))
-                    
-                    if h == Double(hFloor) {
-                        one.append(sorted[hFloor])
-                    } else {
-                        one.append(sorted[hFloor] + (h - Double(hFloor)) * (sorted[hCeil] - sorted[hFloor]))
+                let h = q * (Double(sorted.count) - 1)
+                let hFloor = Int(floor(h))
+                let hCeil = Int(ceil(h))
+                
+                if h == Double(hFloor) {
+                    one.append( sorted[hFloor] )
+                } else {
+                    switch interpolation {
+                    case .linear:
+                        one.append(  sorted[hFloor] + (h - Double(hFloor)) * (sorted[hCeil] - sorted[hFloor]) )
+                    case .lower:
+                        one.append(  sorted[hFloor] )
+                    case .higher:
+                        one.append(  sorted[hCeil] )
+                    case .midpoint:
+                        one.append(  (sorted[hFloor] + sorted[hCeil]) / 2 )
                     }
-                case .lowest:
-                    let idx = Int(Double(sorted.count) * q)
-                    one.append(sorted[idx])
-                case .highest:
-                    let idx = Int(Double(sorted.count) * q)
-                    one.append(sorted[idx+1])
-                case .nearest:
-                    let idx = Int(Double(sorted.count) * q)
-                    if abs(q - Double(idx)) < abs(q - Double(idx+1)) {
-                        one.append(sorted[idx])
-                    }else{
-                        one.append(sorted[idx+1])
-                    }
-                case .mid:
-                    let idx = Int(Double(sorted.count) * q)
-                    one.append((sorted[idx] + sorted[idx+1])/2.0)
                 }
             }
             calculated[field] = one

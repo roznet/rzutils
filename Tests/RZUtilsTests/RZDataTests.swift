@@ -110,21 +110,29 @@ final class RZDataTests: XCTestCase {
     }
     
     func testQuantiles() {
-
+        typealias QuantileInterpolationMethod = DataFrame<Int,Double,String>.QuantileInterpolationMethod
+        
         let qs : [Double] = [0.1,0.5]
         let input : [String:[Double]] = [ "a" :  [1.0,2.0,3.0,4.0], "b" : [1.0, 10.0, 100.0, 100.0] ]
-        let expected : [String:[Double]] = [ "a" : [1.3, 2.5], "b":[3.7, 55.0]]
+        let checks : [QuantileInterpolationMethod:[String:[Double]]] = [
+            .linear : [ "a" : [1.3, 2.5], "b":[3.7, 55.0]],
+            .lower : [ "a" : [1.0, 2.0], "b":[1.0, 10.0]],
+            .higher : [ "a" : [2.0, 3.0], "b":[10.0, 100.0]],
+            .midpoint : [ "a" : [1.5, 2.5], "b":[5.5, 55.0]]
+        ]
         
         guard let sample = input.values.first else { XCTAssertTrue(false); return }
         
-        let df = DataFrame<Int,Double,String>(indexes: Array(0...sample.count), values: input)
-        let quantiles = df.quantiles(qs)
-        
-        for (col,e) in expected {
-            if let qcalculated = quantiles[col]?.values {
-                XCTAssertEqual(qcalculated, e)
-            }else{
-                XCTAssertTrue(false)
+        for (interpolation,expected) in checks {
+            let df = DataFrame<Int,Double,String>(indexes: Array(0...sample.count), values: input)
+            let quantiles = df.quantiles(qs, interpolation: interpolation)
+            
+            for (col,e) in expected {
+                if let qcalculated = quantiles[col]?.values {
+                    XCTAssertEqual(qcalculated, e, "checked \(col) for \(interpolation)")
+                }else{
+                    XCTAssertTrue(false)
+                }
             }
         }
     }
