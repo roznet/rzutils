@@ -82,11 +82,20 @@ final class RZUtilsTests: XCTestCase {
         formatter.unitOptions = .providedUnit
         formatter.numberFormatter.maximumFractionDigits = 2
         
-        let standardRate = Measurement(value: 3.0, unit: UnitAngularVelocity.degreesPerSecond)
+        let standardRate = UnitAngularVelocity.standardRateOfTurn
         let oneRpm = Measurement(value: 1.0, unit: UnitAngularVelocity.revolutionsPerMinute)
         
         XCTAssertEqual(formatter.string(from: standardRate.converted(to: UnitAngularVelocity.revolutionsPerMinute)), "0.5 rpm")
         XCTAssertEqual(formatter.string(from: oneRpm.converted(to: UnitAngularVelocity.degreesPerSecond)), "6 deg/sec")
+        
+        let speed = Measurement(value: 120.0, unit: UnitSpeed.knots)
+        
+        let rate = speed.angularVelocity(bank: Measurement(value: 30.0, unit: UnitAngle.degrees))
+        XCTAssertEqual(formatter.string(from: rate), "5.25 deg/sec")
+        
+        let turnRate = Measurement(value: 4.0, unit: UnitAngularVelocity.degreesPerSecond)
+        let bank = speed.bank(for: turnRate)
+        XCTAssertEqual( formatter.string(from: bank), "23.74 deg")
     }
 
     func testFoundationUnits() {

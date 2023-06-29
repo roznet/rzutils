@@ -130,6 +130,9 @@ public class UnitAngularVelocity : Dimension {
     public static let revolutionsPerMinute = UnitAngularVelocity(symbol: "rpm", converter: UnitConverterLinear(coefficient: 360.0/60.0))
     public static let degreesPerSecond = UnitAngularVelocity(symbol: "deg/sec", converter: UnitConverterLinear(coefficient: 1.0))
 
+    
+    public static let standardRateOfTurn = Measurement(value: 3.0, unit: UnitAngularVelocity.degreesPerSecond)
+    
     public static override func baseUnit() -> Self {
         return degreesPerSecond as! Self
     }
@@ -191,7 +194,9 @@ func * (lhs : Measurement<UnitClimbGradient>, rhs : Measurement<UnitSpeed>) -> M
     let pct = lhs.converted(to: .percent) / 100.0
     return Measurement<UnitSpeed>(value: rhs.value*pct.value, unit: rhs.unit)
 }
-
+extension Double {
+    public static let gravity : Double = 9.8
+}
 extension Measurement where UnitType == UnitSpeed {
     public func length(after duration : Measurement<UnitDuration>) -> Measurement<UnitLength> {
         let mps = self.converted(to: UnitSpeed.metersPerSecond)
@@ -208,9 +213,23 @@ extension Measurement where UnitType == UnitSpeed {
         let radians = bank.converted(to: UnitAngle.radians)
         let mps = self.converted(to: .metersPerSecond)
         
-        return Measurement<UnitLength>(value: mps.value * mps.value / ( 9.8 * tan(radians.value)), unit: UnitLength.meters)
+        return Measurement<UnitLength>(value: mps.value * mps.value / ( Double.gravity * tan(radians.value)), unit: UnitLength.meters)
     }
-
+    func angularVelocity(bank: Measurement<UnitAngle>) -> Measurement<UnitAngularVelocity> {
+        // g * tan(bank) / speed
+        let radians = bank.converted(to: .radians)
+        let mps = self.converted(to: .metersPerSecond)
+        
+        return Measurement<UnitAngularVelocity>(value: Double.gravity * tan(radians.value) / mps.value * 180.0 / Double.pi,
+                           unit: UnitAngularVelocity.degreesPerSecond)
+    }
+    
+    func bank(for angularVelocity: Measurement<UnitAngularVelocity>) -> Measurement<UnitAngle> {
+        let mps = self.converted(to: .metersPerSecond)
+        let degSec = angularVelocity.converted(to: .degreesPerSecond)
+        let val = mps.value * degSec.value / 180.0 * Double.pi / Double.gravity
+        return Measurement<UnitAngle>(value: atan(val)/Double.pi*180.0, unit: UnitAngle.degrees)
+    }
 }
 
 extension Measurement where UnitType == UnitAngle {
