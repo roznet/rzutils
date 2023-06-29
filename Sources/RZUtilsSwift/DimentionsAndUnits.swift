@@ -8,6 +8,8 @@
 import Foundation
 import RZUtils
 
+// MARK: - Converters
+
 class UnitConverterInverseLinear : UnitConverter {
     init(coefficient : Double, offset : Double = 0.0) {
         self.coefficient = coefficient
@@ -50,7 +52,7 @@ class UnitConverterTan : UnitConverter {
     }
 }
 
-
+// MARK: - Standard Unit Extensions
 
 extension UnitSpeed {
     private static let oneMileInMeters : Double = 1609.344
@@ -80,6 +82,8 @@ extension UnitAngle {
     public static let semicircle = UnitAngle(symbol: "sc", converter: UnitConverterLinear(coefficient: 180.0/2147483648.0))
 }
 
+// MARK: - New Units Fitness
+
 class UnitHeartRate : Dimension {
     public static let beatPerMinute = UnitHeartRate(symbol: "bpm", converter: UnitConverterLinear(coefficient: 1.0))
     
@@ -96,6 +100,17 @@ public class UnitPercent : Dimension {
         return percentPerOne as! Self
     }
 }
+
+public class UnitDimensionLess : Dimension {
+    public static let scalar = UnitDimensionLess(symbol: "", converter: UnitConverterLinear(coefficient: 1.0))
+    
+    public static override func baseUnit() -> Self {
+        return scalar as! Self
+    }
+}
+
+
+// MARK: - New Units Airplane
 
 public class UnitFuelFlow : Dimension {
     
@@ -120,15 +135,9 @@ public class UnitAngularVelocity : Dimension {
 
 }
 
-public class UnitDimensionLess : Dimension {
-    public static let scalar = UnitDimensionLess(symbol: "", converter: UnitConverterLinear(coefficient: 1.0))
-    
-    public static override func baseUnit() -> Self {
-        return scalar as! Self
-    }
-}
 
 public class UnitClimbGradient : Dimension {
+    
     public static var percent = UnitClimbGradient(symbol: "%", converter: UnitConverterLinear(coefficient: 1.0))
     public static var feetPerNauticalMile = UnitClimbGradient(symbol: "ft/nm", converter: UnitConverterLinear(coefficient: 100.0/6076.1155))
     public static var degrees = UnitClimbGradient(symbol: "°", converter: UnitConverterTan(insideMultiplier: Double.pi/180.0, outsideMultiplier: 100.0))
@@ -138,6 +147,12 @@ public class UnitClimbGradient : Dimension {
     }
     
     
+}
+extension Measurement where UnitType == UnitClimbGradient {
+    public init(horizontalSpeed : Measurement<UnitSpeed>, verticalSpeed : Measurement<UnitSpeed>) {
+        let consistent = verticalSpeed.converted(to: horizontalSpeed.unit)
+        self.init(value: consistent.value/horizontalSpeed.value*100.0, unit: UnitClimbGradient.percent)
+    }
 }
 
 extension Measurement{
@@ -160,6 +175,103 @@ extension UnitFuelEfficiency {
     
     public static let nauticalMilesPerGallon = UnitFuelEfficiency(symbol: "nm/gal", converter: UnitConverterInverseLinear(coefficient: UnitVolume.oneGallonInLiters/oneNauticalMileInMeters*100.0*1000.0))
 }
+
+// MARK: - Unit operations
+
+func / (lhs : Measurement<UnitLength>, rhs : Measurement<UnitDuration>) -> Measurement<UnitSpeed> {
+    let mps = lhs.converted(to: .meters).value / rhs.converted(to: .seconds).value
+    return Measurement<UnitSpeed>(value: mps, unit: UnitSpeed.metersPerSecond)
+}
+
+func * (lhs : Measurement<UnitSpeed>, rhs : Measurement<UnitClimbGradient>) -> Measurement<UnitSpeed> {
+    let pct = rhs.converted(to: .percent) / 100.0
+    return Measurement<UnitSpeed>(value: lhs.value*pct.value, unit: lhs.unit)
+}
+func * (lhs : Measurement<UnitClimbGradient>, rhs : Measurement<UnitSpeed>) -> Measurement<UnitSpeed> {
+    let pct = lhs.converted(to: .percent) / 100.0
+    return Measurement<UnitSpeed>(value: rhs.value*pct.value, unit: rhs.unit)
+}
+
+extension Measurement where UnitType == UnitSpeed {
+    public func length(after duration : Measurement<UnitDuration>) -> Measurement<UnitLength> {
+        let mps = self.converted(to: UnitSpeed.metersPerSecond)
+        let s = duration.converted(to: UnitDuration.seconds)
+        return Measurement<UnitLength>(value: mps.value*s.value, unit: UnitLength.meters )
+    }
+    
+    public func duration(for length: Measurement<UnitLength>) -> Measurement<UnitDuration> {
+        let mps = self.converted(to: UnitSpeed.metersPerSecond)
+        let m = length.converted(to: UnitLength.meters)
+        return Measurement<UnitDuration>(value: m.value/mps.value, unit: UnitDuration.seconds)
+    }
+}
+
+// MARK: - Formatter
+
+public class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter {
+    public enum JoinStyle {
+        case simple
+        case noUnits
+    }
+    public var minimumComponents : Int = 0
+    
+    public var joinStyle : JoinStyle = .simple
+    public var dimensions : [UnitType]
+    public var separator : String
+    
+    public init(dimensions: [UnitType], separator: String = " ") {
+        self.dimensions = dimensions
+        self.separator = separator
+        super.init()
+        self.unitOptions = .providedUnit
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func measurements(from measurement : Measurement<UnitType>) -> [Measurement<UnitType>] {
+        var zeros : [Measurement<UnitType>] = []
+        var values : [Measurement<UnitType>] = []
+        
+        var remaining : Measurement<UnitType> = measurement
+        for (idx,dim) in self.dimensions.enumerated() {
+            remaining = remaining.converted(to: dim)
+            var current = remaining
+            if idx < (self.dimensions.count - 1) {
+                current.value = floor(current.value)
+            }
+            // do the value substraction in the same unit (for inverse units like pace)
+            remaining.value = remaining.value - current.value
+            
+            if current.value == 0.0 && values.count == 0{
+                zeros.append(current)
+            }else{
+                values.append(current)
+            }
+        }
+        if values.count < self.minimumComponents {
+            values = zeros.suffix(self.minimumComponents-values.count) + values
+        }
+        
+        return values
+    }
+    
+    public func format(from measurement: Measurement<UnitType>) -> String {
+        let values = self.measurements(from: measurement)
+        switch self.joinStyle {
+        case .simple:
+            let fmt = values.map { self.string(from: $0) }
+            return fmt.joined(separator: self.separator)
+        case .noUnits:
+            let fmt = values.compactMap { self.numberFormatter.string(from: NSNumber(floatLiteral: $0.value)) }
+            return fmt.joined(separator: self.separator)
+        }
+    }
+    
+}
+
+// MARK: - GCUnit conversions
 
 extension GCUnit {
     public var foundationUnit : Dimension? {
@@ -287,82 +399,4 @@ extension Unit {
     }
 }
 
-
-func / (lhs : Measurement<UnitLength>, rhs : Measurement<UnitDuration>) -> Measurement<UnitSpeed> {
-    let mps = lhs.converted(to: .meters).value / rhs.converted(to: .seconds).value
-    return Measurement<UnitSpeed>(value: mps, unit: UnitSpeed.metersPerSecond)
-}
-
-func * (lhs : Measurement<UnitSpeed>, rhs : Measurement<UnitClimbGradient>) -> Measurement<UnitSpeed> {
-    let pct = rhs.converted(to: .percent) / 100.0
-    return Measurement<UnitSpeed>(value: lhs.value*pct.value, unit: lhs.unit)
-}
-func * (lhs : Measurement<UnitClimbGradient>, rhs : Measurement<UnitSpeed>) -> Measurement<UnitSpeed> {
-    let pct = lhs.converted(to: .percent) / 100.0
-    return Measurement<UnitSpeed>(value: rhs.value*pct.value, unit: rhs.unit)
-}
-
-
-public class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter {
-    public enum JoinStyle {
-        case simple
-        case noUnits
-    }
-    public var minimumComponents : Int = 0
-    
-    public var joinStyle : JoinStyle = .simple
-    public var dimensions : [UnitType]
-    public var separator : String
-    
-    public init(dimensions: [UnitType], separator: String = " ") {
-        self.dimensions = dimensions
-        self.separator = separator
-        super.init()
-        self.unitOptions = .providedUnit
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func measurements(from measurement : Measurement<UnitType>) -> [Measurement<UnitType>] {
-        var zeros : [Measurement<UnitType>] = []
-        var values : [Measurement<UnitType>] = []
-        
-        var remaining : Measurement<UnitType> = measurement
-        for (idx,dim) in self.dimensions.enumerated() {
-            remaining = remaining.converted(to: dim)
-            var current = remaining
-            if idx < (self.dimensions.count - 1) {
-                current.value = floor(current.value)
-            }
-            // do the value substraction in the same unit (for inverse units like pace)
-            remaining.value = remaining.value - current.value
-            
-            if current.value == 0.0 && values.count == 0{
-                zeros.append(current)
-            }else{
-                values.append(current)
-            }
-        }
-        if values.count < self.minimumComponents {
-            values = zeros.suffix(self.minimumComponents-values.count) + values
-        }
-        
-        return values
-    }
-    
-    public func format(from measurement: Measurement<UnitType>) -> String {
-        let values = self.measurements(from: measurement)
-        switch self.joinStyle {
-        case .simple:
-            let fmt = values.map { self.string(from: $0) }
-            return fmt.joined(separator: self.separator)
-        case .noUnits:
-            let fmt = values.compactMap { self.numberFormatter.string(from: NSNumber(floatLiteral: $0.value)) }
-            return fmt.joined(separator: self.separator)
-        }
-    }
-    
-}
 

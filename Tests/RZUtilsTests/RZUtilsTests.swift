@@ -30,7 +30,7 @@ final class RZUtilsTests: XCTestCase {
         let formatter = MeasurementFormatter()
         formatter.unitOptions = .providedUnit
         let str = formatter.string(from: one)
-        print( str )
+        XCTAssertEqual(str, "4.615 min/km")
 
         let dateformatter = DateComponentsFormatter()
         dateformatter.allowedUnits = [.minute, .second]
@@ -48,6 +48,23 @@ final class RZUtilsTests: XCTestCase {
             XCTAssertEqual(nu.convert(to: GCUnit.minpermile()).formatDoubleNoUnits(),"07:26")
             XCTAssertEqual("0\(v)","07:25")
         }
+    }
+    
+    func testUnitCalculations() {
+        let speed = Measurement(value: 120.0, unit: UnitSpeed.knots)
+        let duration = Measurement(value: 30.0, unit: UnitDuration.minutes)
+        let distance = Measurement(value: 30.0, unit: UnitLength.nauticalMiles)
+            
+        let distanceCovered = speed.length(after : duration).converted(to: UnitLength.nauticalMiles)
+        let durationFor = speed.duration(for : distance).converted(to: UnitDuration.minutes)
+        
+        
+        let formatter = MeasurementFormatter()
+        formatter.unitOptions = .providedUnit
+        formatter.numberFormatter.maximumFractionDigits = 0
+
+        XCTAssertEqual( formatter.string(from: distanceCovered), "60 nmi" )
+        XCTAssertEqual( formatter.string(from: durationFor), "15 min")
     }
 
     
@@ -145,8 +162,16 @@ final class RZUtilsTests: XCTestCase {
         
         formatter.numberFormatter.maximumFractionDigits = 0
         let sp = Measurement(value: 120, unit: UnitSpeed.knots)
+        
         XCTAssertEqual( formatter.string(for: (sp * grP).converted(to: UnitSpeed.feetPerMinute)), "608 fpm")
         XCTAssertEqual( formatter.string(for: (grA * sp).converted(to: UnitSpeed.feetPerMinute)), "637 fpm")
+        
+        let horiz = Measurement(value: 1000.0, unit: UnitSpeed.feetPerMinute)
+        let grS = Measurement(horizontalSpeed: sp, verticalSpeed: horiz)
+        
+        formatter.numberFormatter.maximumFractionDigits = 1
+        XCTAssertEqual( formatter.string(for: grS), "8.2 %")
+        
     }
     
     static var allTests = [
