@@ -26,6 +26,32 @@ class UnitConverterInverseLinear : UnitConverter {
     }
 }
 
+class UnitConverterTan : UnitConverter {
+    let insideMultiplier : Double
+    let outsideMultiplier : Double
+    
+    
+    /// Convert number for relationship of form    outside * tan( inside * x)
+    /// - Parameters:
+    ///   - insideMultiplier:
+    ///   - outsideMultiplier: <#outsideMultiplier description#>
+    init(insideMultiplier : Double, outsideMultiplier : Double) {
+        self.insideMultiplier = insideMultiplier
+        self.outsideMultiplier = outsideMultiplier
+    }
+    
+    
+    override func baseUnitValue(fromValue value: Double) -> Double {
+        return tan(value*self.insideMultiplier)*self.outsideMultiplier
+    }
+    
+    override func value(fromBaseUnitValue baseUnitValue: Double) -> Double {
+        return atan(baseUnitValue/self.outsideMultiplier)/self.insideMultiplier
+    }
+}
+
+
+
 extension UnitSpeed {
     private static let oneMileInMeters : Double = 1609.344
     private static let oneFootInMeters : Double = 1.0/3.2808399
@@ -100,6 +126,17 @@ public class UnitDimensionLess : Dimension {
     public static override func baseUnit() -> Self {
         return scalar as! Self
     }
+}
+
+public class UnitClimbGradient : Dimension {
+    public static var percent = UnitClimbGradient(symbol: "%", converter: UnitConverterLinear(coefficient: 1.0))
+    public static var degrees = UnitClimbGradient(symbol: "°", converter: UnitConverterTan(insideMultiplier: Double.pi/180.0, outsideMultiplier: 100.0))
+    
+    public static override func baseUnit() -> Self {
+        return percent as! Self
+    }
+    
+    
 }
 
 extension Measurement{

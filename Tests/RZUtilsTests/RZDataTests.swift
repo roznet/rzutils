@@ -215,7 +215,6 @@ final class RZDataTests: XCTestCase {
                     XCTAssertTrue(false)
                 }
             }
-
         }
 
         let catInput = [ "a" : ["a","a","b","c"],

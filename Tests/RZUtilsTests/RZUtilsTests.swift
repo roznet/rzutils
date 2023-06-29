@@ -129,6 +129,20 @@ final class RZUtilsTests: XCTestCase {
         let k6 = paceformatter.format(from: speed)
         XCTAssertEqual(k6, "04:37")
     }
+    
+    func testGradient() throws {
+        let formatter = MeasurementFormatter()
+        formatter.unitOptions = .providedUnit
+        formatter.numberFormatter.maximumFractionDigits = 2
+        
+        let grP = Measurement(value: 5.0, unit: UnitClimbGradient.percent)
+        let grA = Measurement(value: 3.0, unit: UnitClimbGradient.degrees)
+                
+        XCTAssertEqual( formatter.string(for: grP.converted(to: UnitClimbGradient.degrees)), "2.86 °")
+        XCTAssertEqual( formatter.string(for: grA.converted(to: UnitClimbGradient.percent)), "5.24 %")
+        
+    }
+    
     static var allTests = [
         ("testExample", testExample),
     ]

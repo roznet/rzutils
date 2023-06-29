@@ -144,7 +144,6 @@
     XCTAssertEqualObjects([mperg convertToUnit:GCUnit.literper100km].description, @"7.84 l/100km");
     XCTAssertEqualObjects([mperg convertToUnit:GCUnit.nmpergallon].description, @"26.1 nm/g");
 }
-
 -(void)testUnits{
     GCUnit * meters = [GCUnit unitForKey:@"meter"];
     GCUnit * km     = [GCUnit unitForKey:@"kilometer"];

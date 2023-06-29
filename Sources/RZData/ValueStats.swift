@@ -8,6 +8,11 @@
 import Foundation
 
 public struct ValueStats {
+    private func stddev(count : Int, sum : Double, ssq : Double ) -> Double{
+        let cnt = Double(count)
+        return sqrt((Double(cnt)*ssq-sum*sum)/(cnt*(cnt-1)))
+    }
+    
     public enum Metric : String{
         case start,end
         case min,max,average
@@ -20,6 +25,7 @@ public struct ValueStats {
     public private(set) var end   : Double
     
     public private(set) var sum : Double
+    public private(set) var sumSquare : Double
     public private(set) var weightedSum : Double
     public private(set) var max : Double
     public private(set) var min : Double
@@ -33,6 +39,7 @@ public struct ValueStats {
 
     public var average : Double { return self.sum / Double(self.count) }
     public var weightedAverage : Double { return self.weightedSum / self.weight }
+    public var standardDeviation : Double { return stddev(count: self.count, sum: self.sum, ssq: self.sumSquare)}
     public var total : Double { return self.end - self.start}
     public var range : Double { return self.max - self.min }
     
@@ -47,6 +54,7 @@ public struct ValueStats {
         self.weight = weight
         self.weightedSum = value * weight
         self.unit = unit
+        self.sumSquare = value
     }
     
     public mutating func update(double value : Double, weight : Double = 1) {
@@ -55,6 +63,7 @@ public struct ValueStats {
             if value.isFinite {
                 self.end = value
                 self.sum += value
+                self.sumSquare += value*value
                 self.max = Swift.max(self.max,value)
                 self.min = Swift.min(self.min,value)
                 self.count += 1
@@ -65,6 +74,7 @@ public struct ValueStats {
             self.start = value
             self.end = value
             self.sum = value
+            self.sumSquare = value*value
             self.max = value
             self.min = value
             self.count = value.isFinite ? 1 : 0
