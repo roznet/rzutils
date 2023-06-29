@@ -140,7 +140,13 @@ final class RZUtilsTests: XCTestCase {
                 
         XCTAssertEqual( formatter.string(for: grP.converted(to: UnitClimbGradient.degrees)), "2.86 °")
         XCTAssertEqual( formatter.string(for: grA.converted(to: UnitClimbGradient.percent)), "5.24 %")
+        XCTAssertEqual( formatter.string(for: grP.converted(to: UnitClimbGradient.feetPerNauticalMile)), "303.81 ft/nm")
+        XCTAssertEqual( formatter.string(for: grA.converted(to: UnitClimbGradient.feetPerNauticalMile)), "318.44 ft/nm")
         
+        formatter.numberFormatter.maximumFractionDigits = 0
+        let sp = Measurement(value: 120, unit: UnitSpeed.knots)
+        XCTAssertEqual( formatter.string(for: (sp * grP).converted(to: UnitSpeed.feetPerMinute)), "608 fpm")
+        XCTAssertEqual( formatter.string(for: (grA * sp).converted(to: UnitSpeed.feetPerMinute)), "637 fpm")
     }
     
     static var allTests = [

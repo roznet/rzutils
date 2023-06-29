@@ -130,6 +130,7 @@ public class UnitDimensionLess : Dimension {
 
 public class UnitClimbGradient : Dimension {
     public static var percent = UnitClimbGradient(symbol: "%", converter: UnitConverterLinear(coefficient: 1.0))
+    public static var feetPerNauticalMile = UnitClimbGradient(symbol: "ft/nm", converter: UnitConverterLinear(coefficient: 100.0/6076.1155))
     public static var degrees = UnitClimbGradient(symbol: "°", converter: UnitConverterTan(insideMultiplier: Double.pi/180.0, outsideMultiplier: 100.0))
     
     public static override func baseUnit() -> Self {
@@ -291,6 +292,16 @@ func / (lhs : Measurement<UnitLength>, rhs : Measurement<UnitDuration>) -> Measu
     let mps = lhs.converted(to: .meters).value / rhs.converted(to: .seconds).value
     return Measurement<UnitSpeed>(value: mps, unit: UnitSpeed.metersPerSecond)
 }
+
+func * (lhs : Measurement<UnitSpeed>, rhs : Measurement<UnitClimbGradient>) -> Measurement<UnitSpeed> {
+    let pct = rhs.converted(to: .percent) / 100.0
+    return Measurement<UnitSpeed>(value: lhs.value*pct.value, unit: lhs.unit)
+}
+func * (lhs : Measurement<UnitClimbGradient>, rhs : Measurement<UnitSpeed>) -> Measurement<UnitSpeed> {
+    let pct = lhs.converted(to: .percent) / 100.0
+    return Measurement<UnitSpeed>(value: rhs.value*pct.value, unit: rhs.unit)
+}
+
 
 public class CompoundMeasurementFormatter<UnitType : Dimension> : MeasurementFormatter {
     public enum JoinStyle {

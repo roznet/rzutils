@@ -12,9 +12,11 @@ import Foundation
 }*/
 
 extension DataFrame where T == Double, I == Double {
-    
+   
+    /*
     public func linearRegression() -> [F:(Double)->Double] {
         var rv : [F:(Double)->Double] = [:]
         return rv
     }
+     */
 }
