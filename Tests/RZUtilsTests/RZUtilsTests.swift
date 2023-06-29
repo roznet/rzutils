@@ -58,6 +58,7 @@ final class RZUtilsTests: XCTestCase {
         let distanceCovered = speed.length(after : duration).converted(to: UnitLength.nauticalMiles)
         let durationFor = speed.duration(for : distance).converted(to: UnitDuration.minutes)
         
+        let radius = speed.radiusOfTurn(bank: Measurement(value: 30.0, unit: UnitAngle.degrees)).converted(to: UnitLength.feet)
         
         let formatter = MeasurementFormatter()
         formatter.unitOptions = .providedUnit
@@ -65,9 +66,29 @@ final class RZUtilsTests: XCTestCase {
 
         XCTAssertEqual( formatter.string(from: distanceCovered), "60 nmi" )
         XCTAssertEqual( formatter.string(from: durationFor), "15 min")
+        
+        XCTAssertEqual( formatter.string(from: radius), "2,210 ft")
+        
+        let turnAngle = Measurement(value: 45.0, unit: UnitAngle.degrees)
+        let anticipation = turnAngle.turnAnticipationLength(radius: radius).converted(to: UnitLength.nauticalMiles)
+        let precisionFormatter = MeasurementFormatter()
+        precisionFormatter.unitOptions = .providedUnit
+        precisionFormatter.numberFormatter.maximumFractionDigits = 2
+        XCTAssertEqual( precisionFormatter.string(from: anticipation), "0.15 nmi")
+    }
+    
+    func testAngularVelocity() {
+        let formatter = MeasurementFormatter()
+        formatter.unitOptions = .providedUnit
+        formatter.numberFormatter.maximumFractionDigits = 2
+        
+        let standardRate = Measurement(value: 3.0, unit: UnitAngularVelocity.degreesPerSecond)
+        let oneRpm = Measurement(value: 1.0, unit: UnitAngularVelocity.revolutionsPerMinute)
+        
+        XCTAssertEqual(formatter.string(from: standardRate.converted(to: UnitAngularVelocity.revolutionsPerMinute)), "0.5 rpm")
+        XCTAssertEqual(formatter.string(from: oneRpm.converted(to: UnitAngularVelocity.degreesPerSecond)), "6 deg/sec")
     }
 
-    
     func testFoundationUnits() {
         struct ConvertTest {
             let key : String

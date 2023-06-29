@@ -127,12 +127,12 @@ public class UnitFuelFlow : Dimension {
 }
 
 public class UnitAngularVelocity : Dimension {
-    public static let revolutionsPerMinute = UnitAngularVelocity(symbol: "rpm", converter: UnitConverterLinear(coefficient: 1.0))
+    public static let revolutionsPerMinute = UnitAngularVelocity(symbol: "rpm", converter: UnitConverterLinear(coefficient: 360.0/60.0))
+    public static let degreesPerSecond = UnitAngularVelocity(symbol: "deg/sec", converter: UnitConverterLinear(coefficient: 1.0))
 
     public static override func baseUnit() -> Self {
-        return revolutionsPerMinute as! Self
+        return degreesPerSecond as! Self
     }
-
 }
 
 
@@ -203,6 +203,21 @@ extension Measurement where UnitType == UnitSpeed {
         let mps = self.converted(to: UnitSpeed.metersPerSecond)
         let m = length.converted(to: UnitLength.meters)
         return Measurement<UnitDuration>(value: m.value/mps.value, unit: UnitDuration.seconds)
+    }
+    func radiusOfTurn(bank : Measurement<UnitAngle>) -> Measurement<UnitLength> {
+        let radians = bank.converted(to: UnitAngle.radians)
+        let mps = self.converted(to: .metersPerSecond)
+        
+        return Measurement<UnitLength>(value: mps.value * mps.value / ( 9.8 * tan(radians.value)), unit: UnitLength.meters)
+    }
+
+}
+
+extension Measurement where UnitType == UnitAngle {
+    public func turnAnticipationLength(radius : Measurement<UnitLength>) -> Measurement<UnitLength> {
+        let r = radius.converted(to: UnitLength.meters)
+        let radians = self.converted(to: UnitAngle.radians)
+        return Measurement<UnitLength>(value: r.value * tan(radians.value / 2.0), unit: UnitLength.meters)
     }
 }
 
