@@ -14,6 +14,7 @@ let package = Package(
         .library(name: "RZUtils", targets: ["RZUtils" ] ),
         .library(name: "RZUtilsUniversal", targets: ["RZUtilsUniversal" ] ),
         .library(name: "RZUtilsSwift", targets: ["RZUtilsSwift" ] ),
+        .library(name: "RZUtilsSwiftUI", targets: ["RZUtilsSwiftUI" ] ),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -36,6 +37,10 @@ let package = Package(
         .target(
             name: "RZUtilsUniversal",
             dependencies: ["RZUtils"]
+        ),
+        .target(
+            name: "RZUtilsSwiftUI",
+            dependencies: ["RZUtilsSwift"]
         ),
         .testTarget(
             name: "RZUtilsTests",

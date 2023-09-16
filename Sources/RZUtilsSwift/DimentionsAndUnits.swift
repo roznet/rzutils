@@ -198,6 +198,11 @@ extension Double {
     public static let gravity : Double = 9.8
 }
 extension Measurement where UnitType == UnitSpeed {
+    public func verticalSpeed(for gradient : Measurement<UnitClimbGradient>) -> Measurement<UnitSpeed> {
+        let pct = gradient.converted(to: .percent) / 100.0
+        return Measurement<UnitSpeed>(value: self.value*pct.value, unit: self.unit)
+    }
+    
     public func length(after duration : Measurement<UnitDuration>) -> Measurement<UnitLength> {
         let mps = self.converted(to: UnitSpeed.metersPerSecond)
         let s = duration.converted(to: UnitDuration.seconds)
