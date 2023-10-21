@@ -43,23 +43,23 @@ public struct RZLogger {
         self.logger = Logger(subsystem: subsystem, category: category)
     }
     
-    public func info(_ message : String, function : String = #function) {
-        self.logger.info("\(function) \(message)")
+    public func info(_ message : String, function : String = #function, file : String = #file, line : Int = #line) {
+        self.logger.info("\((file as NSString).lastPathComponent):\(String(format: "%d", line)):\(function) \(message)")
     }
-    public func error(_ message : String, function : String = #function) {
-        self.logger.error("\(function) \(message)")
+    public func error(_ message : String, function : String = #function, file : String = #file, line : Int = #line) {
+        self.logger.error("\((file as NSString).lastPathComponent):\(String(format: "%d", line)):\(function) \(message)")
     }
-    public func warning(_ message : String, function : String = #function) {
-        self.logger.notice("\(function) \(message)")
+    public func warning(_ message : String, function : String = #function, file : String = #file, line : Int = #line) {
+        self.logger.notice("\((file as NSString).lastPathComponent):\(String(format: "%d", line)):\(function) \(message)")
     }
 }
 
 extension Logger {
     
-    public static func logEntriesFormatted() -> [String] {
+    public static func logEntriesFormatted(hours : Int = 1) -> [String] {
         var rv : [String] = []
         do {
-            let l = try Self.logEntries()
+            let l = try Self.logEntries(hours: hours)
             for one in l {
                 rv.append("\(one)")
             }
@@ -69,10 +69,10 @@ extension Logger {
         return rv
     }
     
-    public static func logEntries() throws -> [OSLogEntryLog]{
+    public static func logEntries(hours : Int = 1) throws -> [OSLogEntryLog]{
         let logStore = try OSLogStore(scope: .currentProcessIdentifier)
         
-        let oneHour = logStore.position(date: Date().addingTimeInterval(-3600))
+        let oneHour = logStore.position(date: Date().addingTimeInterval(-3600*TimeInterval(hours)))
         
         let entries = try logStore.getEntries(at: oneHour)
         
