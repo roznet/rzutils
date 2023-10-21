@@ -22,13 +22,13 @@ extension NSAttributedString {
 }
 
 extension String {
-    enum TruncationPosition {
+    public enum TruncationPosition {
         case head
         case middle
         case tail
     }
     
-    func truncated(limit : Int, position: TruncationPosition = .middle, ellipsis: String = "...") -> String {
+    public func truncated(limit : Int, position: TruncationPosition = .middle, ellipsis: String = "...") -> String {
         guard self.count > limit else { return self }
         
         let keep = limit - ellipsis.count
