@@ -20,3 +20,28 @@ extension NSAttributedString {
         return rv
     }
 }
+
+extension String {
+    enum TruncationPosition {
+        case head
+        case middle
+        case tail
+    }
+    
+    func truncated(limit : Int, position: TruncationPosition = .middle, ellipsis: String = "...") -> String {
+        guard self.count > limit else { return self }
+        
+        let keep = limit - ellipsis.count
+        switch position {
+        case .head:
+            return ellipsis + self.suffix(keep)
+        case .tail:
+            return self.prefix(keep) + ellipsis
+        case .middle:
+            let prefix = self.prefix(keep/2)
+            let suffix = self.suffix(limit-ellipsis.count-prefix.count)
+            
+            return "\(prefix)\(ellipsis)\(suffix)"
+        }
+    }
+}

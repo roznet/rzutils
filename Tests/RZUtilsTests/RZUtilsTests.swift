@@ -204,6 +204,28 @@ final class RZUtilsTests: XCTestCase {
         
     }
     
+    func testStringsTruncate(){
+        let ellipsis = "..."
+        for one in [ "01234567890123456789", "012345678901234567890" ] {
+            XCTAssertEqual(one.truncated(limit: one.count*2), one)
+            for limit in [10, 11] {
+                let head = one.truncated(limit: limit, position: .head, ellipsis: ellipsis)
+                let middle = one.truncated(limit: limit, position: .middle, ellipsis: ellipsis)
+                let tail = one.truncated(limit: limit, position: .tail, ellipsis: ellipsis)
+                XCTAssertEqual(head.count,limit)
+                XCTAssertEqual(middle.count,limit)
+                XCTAssertEqual(tail.count,limit)
+                
+                XCTAssertTrue(head.hasPrefix(ellipsis) && !head.hasSuffix(ellipsis))
+                XCTAssertTrue(!middle.hasPrefix(ellipsis) && !middle.hasSuffix(ellipsis))
+                XCTAssertTrue(!tail.hasPrefix(ellipsis) && tail.hasSuffix(ellipsis))
+            }
+        }
+                    
+
+
+    }
+    
     static var allTests = [
         ("testExample", testExample),
     ]
