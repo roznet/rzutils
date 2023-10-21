@@ -27,6 +27,7 @@
 
 import Foundation
 import SwiftUI
+#if os(iOS)
 import UIKit
 
 extension Color {
@@ -81,4 +82,4 @@ extension Color {
     }
 
 }
-
+#endif

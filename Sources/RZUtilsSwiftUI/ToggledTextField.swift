@@ -39,7 +39,9 @@ public struct ToggledTextField: View {
             TextField(title, text: $text)
                 .textFieldStyle(.roundedBorder)
                 .onAppear(){
+                    #if os(iOS)
                     UITextField.appearance().clearButtonMode = .whileEditing
+                    #endif
                 }
         }else{
             TextField(title, text: $text)
