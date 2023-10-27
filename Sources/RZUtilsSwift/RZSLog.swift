@@ -38,35 +38,64 @@ extension String.StringInterpolation {
     }
 }
 public struct RZLogger {
+    public static var useOSLog : Bool = false
+    
     let logger : Logger
+    let category : String
     public init(subsystem: String, category: String){
+        self.category = category
         self.logger = Logger(subsystem: subsystem, category: category)
     }
     
     public func info(_ message : String, function : String = #function, file : String = #file, line : Int = #line) {
-        self.logger.info("\((file as NSString).lastPathComponent):\(String(format: "%d", line)):\(function) \(message)")
+        if RZLogger.useOSLog {
+            self.logger.info("\((file as NSString).lastPathComponent, privacy: .public):\(String(format: "%d", line), privacy: .public):\(function, privacy: .public) \(message, privacy: .public)")
+        }else{
+            RZSLogBridge.logInfo(function, path: file , line: line, message: "[\(category)] \(message)")
+        }
     }
     public func error(_ message : String, function : String = #function, file : String = #file, line : Int = #line) {
-        self.logger.error("\((file as NSString).lastPathComponent):\(String(format: "%d", line)):\(function) \(message)")
+        if RZLogger.useOSLog {
+            self.logger.error("\((file as NSString).lastPathComponent, privacy: .public):\(String(format: "%d", line), privacy: .public):\(function, privacy: .public) \(message, privacy: .public)")
+        }else{
+            RZSLogBridge.logError(function, path: file , line: line, message: "[\(category)] \(message)")
+        }
     }
     public func warning(_ message : String, function : String = #function, file : String = #file, line : Int = #line) {
-        self.logger.notice("\((file as NSString).lastPathComponent):\(String(format: "%d", line)):\(function) \(message)")
+        if RZLogger.useOSLog {
+            self.logger.notice("\((file as NSString).lastPathComponent, privacy: .public):\(String(format: "%d", line), privacy: .public):\(function, privacy: .public) \(message, privacy: .public)")
+        }else{
+            RZSLogBridge.logWarning(function, path: file , line: line, message: "[\(category)] \(message)")
+
+        }
     }
 }
 
 extension Logger {
+   
+    public static func logEntriesContent(hours : Int = 1) -> String {
+        if RZLogger.useOSLog {
+            return logEntriesFormatted(hours: hours).joined(separator: "\n")
+        }else{
+            return RZLogFileContent() ?? "<Empty Log>"
+        }
+    }
     
     public static func logEntriesFormatted(hours : Int = 1) -> [String] {
-        var rv : [String] = []
-        do {
-            let l = try Self.logEntries(hours: hours)
-            for one in l {
-                rv.append("\(one)")
+        if RZLogger.useOSLog {
+            var rv : [String] = []
+            do {
+                let l = try Self.logEntries(hours: hours)
+                for one in l {
+                    rv.append("\(one)")
+                }
+            }catch{
+                rv.append(error.localizedDescription)
             }
-        }catch{
-            rv.append(error.localizedDescription)
+            return rv
+        }else{
+            return RZLogFileContent().components(separatedBy: CharacterSet.newlines)
         }
-        return rv
     }
     
     public static func logEntries(hours : Int = 1) throws -> [OSLogEntryLog]{
