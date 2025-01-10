@@ -153,7 +153,7 @@ public struct UserStorage<Key : RawRepresentable<String>, Type> {
 }
 
 @propertyWrapper
-public struct CodableStorage<Key : RawRepresentable<String>, Type : Codable> {
+public struct OptionalCodableStorage<Key : RawRepresentable<String>, Type : Codable> {
     private let key : String
     
     public init(key : Key){
@@ -177,6 +177,34 @@ public struct CodableStorage<Key : RawRepresentable<String>, Type : Codable> {
         }
     }
 }
+@propertyWrapper
+public struct CodableStorage<Key : RawRepresentable<String>, Type : Codable> {
+    private let key : String
+    private let defaultValue : Type
+    
+    public init(key : Key, defaultValue : Type){
+        self.key = key.rawValue
+        self.defaultValue = defaultValue
+    }
+    
+    public var wrappedValue : Type {
+        get {
+            if let data = UserDefaults.standard.data(forKey: key),
+               let decoded = try? JSONDecoder().decode(Type.self, from: data) {
+                return decoded
+            }
+            return defaultValue
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: key)
+            }else{
+                UserDefaults.standard.set(defaultValue, forKey: key)
+            }
+        }
+    }
+}
+
 @propertyWrapper
 public struct UnitStorage<Key : RawRepresentable<String>,UnitType : Dimension> {
     private let key : String
