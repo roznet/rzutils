@@ -137,12 +137,16 @@ final class RZDataTests: XCTestCase {
         }
     }
     
-    func buildSampleDf<T>(input : [String:[T]], indexes : [Int]? = nil) -> DataFrame<Int,T,String>? {
+    func buildSampleDfWithIntIndex<T>(input: [String: [T]], indexes: [Int]? = nil) -> DataFrame<Int, T, String>? {
         guard let sample = input.values.first else { XCTAssertTrue(false); return nil }
-
-        let indexes : [Int] = indexes ?? Array(0...sample.count)
-        let df = DataFrame<Int,T,String>(indexes: indexes, values: input)
-        return df
+        let indexes = indexes ?? Array(0..<sample.count)
+        return DataFrame<Int, T, String>(indexes: indexes, values: input)
+    }
+    
+    func buildSampleDfWithDoubleIndex<T>(input: [String: [T]], indexes: [Double]? = nil) -> DataFrame<Double, T, String>? {
+        guard let sample = input.values.first else { XCTAssertTrue(false); return nil }
+        let indexes = indexes ?? Array(0..<sample.count).map { Double($0) }
+        return DataFrame<Double, T, String>(indexes: indexes, values: input)
     }
     
     func testCumSum() {
@@ -156,7 +160,7 @@ final class RZDataTests: XCTestCase {
         let input : [String:[Double]] = [ "a" : [1.0,2.0,3.0,4.0],
                                           "b" : [1.0, 10.0, 100.0, 100.0] ]
 
-        if let df = self.buildSampleDf(input: input){
+        if let df = self.buildSampleDfWithIntIndex(input: input){
             let cumsum = df.cumsum()
             for (col,array) in input {
                 let cumulativeSum = array.reduce(into: [Double]()) { result, number in
@@ -174,7 +178,7 @@ final class RZDataTests: XCTestCase {
     func testDescribe() {
         let valInput = [ "a" : [1.0,2.0,3.0,4.0],
                          "b" : [1.0, 10.0, 100.0, 1000.0] ]
-        if let df = self.buildSampleDf(input: valInput) {
+        if let df = self.buildSampleDfWithIntIndex(input: valInput) {
             let des = df.describeValues()
             
             for (col,vals) in valInput {
@@ -194,7 +198,7 @@ final class RZDataTests: XCTestCase {
         let weightInput = [ "a" : [4.0, 2.0, 6.0, 8.0],
                             "b" : [8.0, 4.0, 12.0, 16.0],
                             "w" : weights]
-        if let df = self.buildSampleDf(input: weightInput) {
+        if let df = self.buildSampleDfWithIntIndex(input: weightInput) {
             let des = df.describeValues(weight: "w")
             XCTAssertNil(des["w"])
             
@@ -219,7 +223,7 @@ final class RZDataTests: XCTestCase {
 
         let catInput = [ "a" : ["a","a","b","c"],
                          "b" : ["a","b","c"] ]
-        if let df = self.buildSampleDf(input: catInput) {
+        if let df = self.buildSampleDfWithIntIndex(input: catInput) {
             let des = df.describeCategorical()
             for (col,vals) in catInput {
                 if let stats = des[col] {
@@ -242,7 +246,7 @@ final class RZDataTests: XCTestCase {
             "b": [10.0, 20.0, 30.0, 40.0]
         ]
         
-        if let df = self.buildSampleDf(input: input) {
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
             // Test individual field statistics
             XCTAssertEqual(df.sum(for: "a"), 10.0)
             XCTAssertEqual(df.mean(for: "a"), 2.5)
@@ -269,7 +273,7 @@ final class RZDataTests: XCTestCase {
             "mixed": [-2.0, 0.0, 2.0, 4.0]
         ]
         
-        if let df = self.buildSampleDf(input: input) {
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
             // Test individual field min/max
             let positiveMinMax = df.minMax(for: "positive")
             XCTAssertEqual(positiveMinMax?.min, 1.0)
@@ -290,7 +294,7 @@ final class RZDataTests: XCTestCase {
             "values": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
         ]
         
-        if let df = self.buildSampleDf(input: input) {
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
             // Test individual field moving average
             let ma3 = df.movingAverage(for: "values", windowSize: 3)
             XCTAssertEqual(ma3?[2], 2.0)  // (1+2+3)/3
@@ -311,7 +315,7 @@ final class RZDataTests: XCTestCase {
             "z": [5.0, 4.0, 3.0, 2.0, 1.0]    // Perfect negative correlation
         ]
         
-        if let df = self.buildSampleDf(input: input) {
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
             // Test individual field correlations
             if let xyCorr = df.correlation(between: "x", and: "y") {
                 XCTAssertEqual(xyCorr, 1.0, accuracy: 0.0001)  // Perfect positive correlation
@@ -338,7 +342,7 @@ final class RZDataTests: XCTestCase {
             "values": [2.0, 3.0, 4.0, 5.0, 6.0]
         ]
         
-        if let df = self.buildSampleDf(input: input, indexes: Array(1...5)) {
+        if let df = self.buildSampleDfWithIntIndex(input: input, indexes: Array(1...5)) {
             // Test binary search
             XCTAssertEqual(df.binarySearch(for: 2), 1)
             XCTAssertEqual(df.binarySearch(for: 6), nil)
@@ -363,7 +367,7 @@ final class RZDataTests: XCTestCase {
             "inf": [1.0, Double.infinity, 3.0]
         ]
         
-        if let df = self.buildSampleDf(input: input) {
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
             // Test empty array handling
             XCTAssertEqual(df.sum(for: "empty"), 0.0)
             let mean = df.mean(for: "empty")
@@ -377,6 +381,155 @@ final class RZDataTests: XCTestCase {
             // Test NaN and Inf handling
             XCTAssertTrue(df.sum(for: "nan")?.isNaN ?? false)
             XCTAssertTrue(df.sum(for: "inf")?.isInfinite ?? false)
+        }
+    }
+    
+    // MARK: - Linear Regression Tests
+    
+    func testLinearRegression() {
+        // Test perfect linear relationship
+        let perfectInput: [String: [Double]] = [
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "y": [2.0, 4.0, 6.0, 8.0, 10.0]  // y = 2x
+        ]
+        
+        if let df = self.buildSampleDfWithDoubleIndex(input: perfectInput) {
+            let regressions = df.linearRegression(x: "x")
+            
+            // Test the regression function
+            if let yRegression = regressions["y"] {
+                // Test known points
+                XCTAssertEqual(yRegression(1.0), 2.0, accuracy: 0.0001)
+                XCTAssertEqual(yRegression(2.0), 4.0, accuracy: 0.0001)
+                XCTAssertEqual(yRegression(3.0), 6.0, accuracy: 0.0001)
+                
+                // Test interpolation
+                XCTAssertEqual(yRegression(1.5), 3.0, accuracy: 0.0001)
+                XCTAssertEqual(yRegression(2.5), 5.0, accuracy: 0.0001)
+            } else {
+                XCTFail("Regression function for 'y' not found")
+            }
+        }
+        
+        // Test noisy data
+        let noisyInput: [String: [Double]] = [
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "y": [2.1, 3.9, 6.2, 7.8, 10.1]  // Approximately y = 2x
+        ]
+        
+        if let df = self.buildSampleDfWithDoubleIndex(input: noisyInput) {
+            let regressions = df.linearRegression(x: "x")
+            
+            if let yRegression = regressions["y"] {
+                // Test approximate values
+                XCTAssertEqual(yRegression(1.0), 2.0, accuracy: 0.2)
+                XCTAssertEqual(yRegression(2.0), 4.0, accuracy: 0.2)
+                XCTAssertEqual(yRegression(3.0), 6.0, accuracy: 0.2)
+            }
+        }
+    }
+    
+    // MARK: - Interpolation Tests
+    
+    func testDoubleInterpolation() {
+        // Test Double index interpolation
+        let doubleInput: [String: [Double]] = [
+            "x": [1.0, 2.0, 3.0, 4.0],
+            "y": [10.0, 20.0, 30.0, 40.0]
+        ]
+        
+        if let df = self.buildSampleDfWithDoubleIndex(input: doubleInput) {
+            // Test interpolation at known points
+            let knownPoints = [1.0, 2.0, 3.0, 4.0]
+            let interpolated = df.interpolate(indexes: knownPoints)
+            
+            XCTAssertEqual(interpolated.values["x"], [1.0, 2.0, 3.0, 4.0])
+            XCTAssertEqual(interpolated.values["y"], [10.0, 20.0, 30.0, 40.0])
+            
+            // Test interpolation at intermediate points
+            let intermediatePoints = [1.5, 2.5, 3.5]
+            let interpolatedIntermediate = df.interpolate(indexes: intermediatePoints)
+            
+            XCTAssertEqual(interpolatedIntermediate.values["x"], [1.5, 2.5, 3.5])
+            XCTAssertEqual(interpolatedIntermediate.values["y"], [15.0, 25.0, 35.0])
+            
+            // Test out of range interpolation
+            let outOfRangePoints = [0.0, 5.0]
+            let outOfRangeInterpolated = df.interpolate(indexes: outOfRangePoints)
+            
+            XCTAssertEqual(outOfRangeInterpolated.values["x"], [0.0, 5.0])
+            XCTAssertEqual(outOfRangeInterpolated.values["y"], [10.0, 40.0])
+        }
+    }
+    
+    func testDateInterpolation() {
+        // Test Date index interpolation
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        
+        let dates = [
+            dateFormatter.date(from: "2023-01-01 00:00:00")!,
+            dateFormatter.date(from: "2023-01-02 00:00:00")!,
+            dateFormatter.date(from: "2023-01-03 00:00:00")!,
+            dateFormatter.date(from: "2023-01-04 00:00:00")!
+        ]
+        
+        let dateInput: [String: [Double]] = [
+            "value": [10.0, 20.0, 30.0, 40.0]
+        ]
+        
+        let dateDf = DataFrame<Date, Double, String>(indexes: dates, values: dateInput)
+        
+        // Test interpolation at known dates
+        let knownDates = [
+            dateFormatter.date(from: "2023-01-01 00:00:00")!,
+            dateFormatter.date(from: "2023-01-02 00:00:00")!,
+            dateFormatter.date(from: "2023-01-03 00:00:00")!,
+            dateFormatter.date(from: "2023-01-04 00:00:00")!
+        ]
+        
+        let interpolatedDates = dateDf.interpolate(dates: knownDates)
+        XCTAssertEqual(interpolatedDates.values["value"], [10.0, 20.0, 30.0, 40.0])
+        
+        // Test interpolation at intermediate dates
+        let intermediateDates = [
+            dateFormatter.date(from: "2023-01-01 12:00:00")!,
+            dateFormatter.date(from: "2023-01-02 12:00:00")!,
+            dateFormatter.date(from: "2023-01-03 12:00:00")!
+        ]
+        
+        let interpolatedIntermediateDates = dateDf.interpolate(dates: intermediateDates)
+        XCTAssertEqual(interpolatedIntermediateDates.values["value"], [15.0, 25.0, 35.0])
+    }
+    
+    func testInterpolationEdgeCases() {
+        // Test empty DataFrame
+        let emptyDf = DataFrame<Double, Double, String>()
+        let emptyInterpolated = emptyDf.interpolate(indexes: [1.0, 2.0, 3.0])
+        XCTAssertEqual(emptyInterpolated.count, 0)
+        
+        // Test single point
+        let singlePointInput: [String: [Double]] = [
+            "x": [1.0],
+            "y": [10.0]
+        ]
+        
+        if let df = self.buildSampleDfWithDoubleIndex(input: singlePointInput) {
+            let singleInterpolated = df.interpolate(indexes: [1.0, 1.5, 2.0])
+            XCTAssertEqual(singleInterpolated.values["x"], [1.0, 1.5, 2.0])
+            XCTAssertEqual(singleInterpolated.values["y"], [10.0, 10.0, 10.0])
+        }
+        
+        // Test out of range interpolation
+        let rangeInput: [String: [Double]] = [
+            "x": [1.0, 2.0, 3.0],
+            "y": [10.0, 20.0, 30.0]
+        ]
+        
+        if let df = self.buildSampleDfWithDoubleIndex(input: rangeInput) {
+            let outOfRangeInterpolated = df.interpolate(indexes: [0.0, 4.0])
+            XCTAssertEqual(outOfRangeInterpolated.values["x"], [0.0, 4.0])
+            XCTAssertEqual(outOfRangeInterpolated.values["y"], [10.0, 30.0])
         }
     }
 }

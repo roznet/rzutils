@@ -540,6 +540,31 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         return DataFrame(indexes: newIndexes, values: newValues)
     }
     
+    public subscript(range: Range<Int>) -> DataFrame {
+        guard !range.isEmpty else { return DataFrame(fields: self.fields) }
+        guard range.lowerBound >= 0 && range.upperBound <= self.count else {
+            return DataFrame(fields: self.fields)
+        }
+        
+        var rv = DataFrame(fields: self.fields)
+        rv.indexes = [I](self.indexes[range])
+        for (field, values) in self.values {
+            rv.values[field] = [T](values[range])
+        }
+        return rv
+    }
+    
+    public subscript(columns: Set<F>) -> DataFrame {
+        let validColumns = columns.intersection(Set(self.fields))
+        guard !validColumns.isEmpty else { return DataFrame(fields: []) }
+        
+        var rv = DataFrame(fields: Array(validColumns))
+        rv.indexes = self.indexes
+        for field in validColumns {
+            rv.values[field] = self.values[field]
+        }
+        return rv
+    }
 }
 
 //MARK: - Floating point specialisation
@@ -821,6 +846,68 @@ extension DataFrame where I == Int {
     
     public func validate() -> Bool {
         return validateIndexValueSync() && isSorted()
+    }
+}
+
+// Add async/await support
+extension DataFrame {
+    public func asyncMap<U>(_ transform: @escaping (T) async throws -> U) async throws -> DataFrame<I, U, F> {
+        var newValues: [F: [U]] = [:]
+        let newIndexes = self.indexes
+        
+        // Process each field in parallel
+        try await withThrowingTaskGroup(of: (F, [U]).self) { group in
+            for (field, values) in self.values {
+                group.addTask {
+                    var transformed: [U] = []
+                    transformed.reserveCapacity(values.count)
+                    
+                    for value in values {
+                        let transformedValue = try await transform(value)
+                        transformed.append(transformedValue)
+                    }
+                    
+                    return (field, transformed)
+                }
+            }
+            
+            // Collect results
+            for try await (field, transformedValues) in group {
+                newValues[field] = transformedValues
+            }
+        }
+        
+        return DataFrame<I, U, F>(indexes: newIndexes, values: newValues)
+    }
+    
+    public func parallelMap<U>(_ transform: @escaping (T) -> U) -> DataFrame<I, U, F> {
+        var newValues: [F: [U]] = [:]
+        let newIndexes = self.indexes
+        
+        // Use DispatchQueue for parallel processing
+        let queue = DispatchQueue(label: "com.rzdata.parallelMap", attributes: .concurrent)
+        let group = DispatchGroup()
+        let lock = NSLock()
+        
+        for (field, values) in self.values {
+            group.enter()
+            queue.async {
+                var transformed: [U] = []
+                transformed.reserveCapacity(values.count)
+                
+                for value in values {
+                    transformed.append(transform(value))
+                }
+                
+                lock.lock()
+                newValues[field] = transformed
+                lock.unlock()
+                group.leave()
+            }
+        }
+        
+        group.wait()
+        return DataFrame<I, U, F>(indexes: newIndexes, values: newValues)
     }
 }
 
