@@ -7,9 +7,10 @@
 
 import Foundation
 import CoreLocation
+import Accelerate
 
 //DataFrame
-public struct DataFrame<I : Comparable,T,F : Hashable> {
+public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
     //MARK: - Type definitions
     public enum DataFrameError : Error {
         case inconsistentIndexOrder
@@ -606,6 +607,239 @@ extension DataFrame  where T == Double {
         let value = fieldValues.min()
         return value
     }
+
+    // MARK: - Accelerate Optimized Statistics
+    
+    public func sum(for field: F) -> Double? {
+        guard let values = self.values[field] else { return nil }
+        var result: Double = 0.0
+        vDSP_sveD(values, 1, &result, vDSP_Length(values.count))
+        return result
+    }
+    
+    public func mean(for field: F) -> Double? {
+        guard let values = self.values[field] else { return nil }
+        
+        // Check for NaN values
+        if values.contains(where: { $0.isNaN }) {
+            return nil
+        }
+        
+        var result: Double = 0.0
+        vDSP_meanvD(values, 1, &result, vDSP_Length(values.count))
+        return result
+    }
+    
+    public func variance(for field: F) -> Double? {
+        guard let values = self.values[field], !values.isEmpty else { return nil }
+        guard values.count > 1 else { return 0.0 } // Variance is 0 for single value
+        
+        // Check for NaN values
+        if values.contains(where: { $0.isNaN }) {
+            return nil
+        }
+        
+        // Calculate mean
+        var mean: Double = 0.0
+        vDSP_meanvD(values, 1, &mean, vDSP_Length(values.count))
+        
+        // Calculate sum of squared differences
+        var squaredDiffs = [Double](repeating: 0.0, count: values.count)
+        let meanArray = [Double](repeating: mean, count: values.count)
+        
+        // Subtract mean from each value
+        vDSP_vsubD(meanArray, 1, values, 1, &squaredDiffs, 1, vDSP_Length(values.count))
+        
+        // Square the differences
+        vDSP_vsqD(squaredDiffs, 1, &squaredDiffs, 1, vDSP_Length(values.count))
+        
+        // Sum the squared differences
+        var sumSquaredDiffs: Double = 0.0
+        vDSP_sveD(squaredDiffs, 1, &sumSquaredDiffs, vDSP_Length(values.count))
+        
+        // Divide by (n) for sample variance
+        return sumSquaredDiffs / Double(values.count - 1)
+    }
+    
+    public func standardDeviation(for field: F) -> Double? {
+        guard let variance = self.variance(for: field) else { return nil }
+        return sqrt(variance)
+    }
+    
+    public func minMax(for field: F) -> (min: Double, max: Double)? {
+        guard let values = self.values[field] else { return nil }
+        var min: Double = 0.0
+        var max: Double = 0.0
+        vDSP_minvD(values, 1, &min, vDSP_Length(values.count))
+        vDSP_maxvD(values, 1, &max, vDSP_Length(values.count))
+        return (min, max)
+    }
+    
+    public func quantiles(for field: F, probabilities: [Double]) -> [Double]? {
+        guard let values = self.values[field] else { return nil }
+        let sortedValues = values.sorted()
+        var quantiles = [Double](repeating: 0.0, count: probabilities.count)
+        
+        for (i, prob) in probabilities.enumerated() {
+            let index = Int(round(Double(sortedValues.count - 1) * prob))
+            quantiles[i] = sortedValues[index]
+        }
+        
+        return quantiles
+    }
+    
+    public func movingAverage(for field: F, windowSize: Int) -> [Double]? {
+        guard let values = self.values[field], windowSize > 0 else { return nil }
+        var result = [Double](repeating: 0.0, count: values.count)
+        
+        // Use vDSP for efficient moving average calculation
+        for i in 0..<values.count {
+            let start = Swift.max(0, i - windowSize + 1)
+            let count = Swift.min(windowSize, i + 1)
+            var sum: Double = 0.0
+            vDSP_sveD(Array(values[start..<start+count]), 1, &sum, vDSP_Length(count))
+            result[i] = sum / Double(count)
+        }
+        
+        return result
+    }
+    
+    public func correlation(between field1: F, and field2: F) -> Double? {
+        guard let values1 = self.values[field1],
+              let values2 = self.values[field2],
+              values1.count == values2.count,
+              !values1.isEmpty else { return nil }
+        guard values1.count > 1 else { return 0.0 } // Correlation is 0 for single value
+        
+        // Check for NaN values
+        if values1.contains(where: { $0.isNaN }) || values2.contains(where: { $0.isNaN }) {
+            return nil
+        }
+        
+        // Calculate means
+        var mean1: Double = 0.0
+        var mean2: Double = 0.0
+        vDSP_meanvD(values1, 1, &mean1, vDSP_Length(values1.count))
+        vDSP_meanvD(values2, 1, &mean2, vDSP_Length(values2.count))
+        
+        // Create arrays of means
+        let meanArray1 = [Double](repeating: mean1, count: values1.count)
+        let meanArray2 = [Double](repeating: mean2, count: values2.count)
+        
+        // Center the values
+        var centered1 = [Double](repeating: 0.0, count: values1.count)
+        var centered2 = [Double](repeating: 0.0, count: values2.count)
+        vDSP_vsubD(meanArray1, 1, values1, 1, &centered1, 1, vDSP_Length(values1.count))
+        vDSP_vsubD(meanArray2, 1, values2, 1, &centered2, 1, vDSP_Length(values2.count))
+        
+        // Calculate covariance numerator
+        var covariance: Double = 0.0
+        vDSP_dotprD(centered1, 1, centered2, 1, &covariance, vDSP_Length(values1.count))
+        
+        // Calculate standard deviations
+        var sumSquares1: Double = 0.0
+        var sumSquares2: Double = 0.0
+        var temp1 = centered1
+        var temp2 = centered2
+        vDSP_vsqD(centered1, 1, &temp1, 1, vDSP_Length(values1.count))
+        vDSP_vsqD(centered2, 1, &temp2, 1, vDSP_Length(values2.count))
+        vDSP_sveD(temp1, 1, &sumSquares1, vDSP_Length(values1.count))
+        vDSP_sveD(temp2, 1, &sumSquares2, vDSP_Length(values2.count))
+        
+        let stdDev1 = sqrt(sumSquares1 / Double(values1.count - 1))
+        let stdDev2 = sqrt(sumSquares2 / Double(values2.count - 1))
+        
+        // Check for zero standard deviations
+        if stdDev1 == 0.0 || stdDev2 == 0.0 {
+            return nil
+        }
+        
+        // Calculate correlation
+        return covariance / (Double(values1.count - 1) * stdDev1 * stdDev2)
+    }
+    
+    // MARK: - All Fields Statistics
+    
+    public func sums() -> [F: Double] {
+        var results: [F: Double] = [:]
+        for field in self.fields {
+            results[field] = self.sum(for: field)
+        }
+        return results
+    }
+    
+    public func means() -> [F: Double] {
+        var results: [F: Double] = [:]
+        for field in self.fields {
+            results[field] = self.mean(for: field)
+        }
+        return results
+    }
+    
+    public func variances() -> [F: Double] {
+        var results: [F: Double] = [:]
+        for field in self.fields {
+            results[field] = self.variance(for: field)
+        }
+        return results
+    }
+    
+    public func standardDeviations() -> [F: Double] {
+        var results: [F: Double] = [:]
+        for field in self.fields {
+            results[field] = self.standardDeviation(for: field)
+        }
+        return results
+    }
+    
+    public func minMaxes() -> [F: (min: Double, max: Double)] {
+        var results: [F: (min: Double, max: Double)] = [:]
+        for field in self.fields {
+            results[field] = self.minMax(for: field)
+        }
+        return results
+    }
+    
+    public func quantiles(probabilities: [Double]) -> [F: [Double]] {
+        var results: [F: [Double]] = [:]
+        for field in self.fields {
+            results[field] = self.quantiles(for: field, probabilities: probabilities)
+        }
+        return results
+    }
+    
+    public func movingAverages(windowSize: Int) -> [F: [Double]] {
+        var results: [F: [Double]] = [:]
+        for field in self.fields {
+            results[field] = self.movingAverage(for: field, windowSize: windowSize)
+        }
+        return results
+    }
+    
+    public func correlations() -> [F: [F: Double]] {
+        var results: [F: [F: Double]] = [:]
+        let fields = self.fields
+        
+        for field1 in fields {
+            var fieldCorrelations: [F: Double] = [:]
+            for field2 in fields where field1 != field2 {
+                fieldCorrelations[field2] = self.correlation(between: field1, and: field2)
+            }
+            results[field1] = fieldCorrelations
+        }
+        
+        return results
+    }
+    
+    public func describe() -> [String: [F: Double]] {
+        return [
+            "sum": sums(),
+            "mean": means(),
+            "std": standardDeviations(),
+            "min": minMaxes().mapValues { $0.min },
+            "max": minMaxes().mapValues { $0.max }
+        ]
+    }
 }
 
 //MARK: - Equatable specialisation
@@ -726,6 +960,136 @@ extension DataFrame where T == CLLocationCoordinate2D {
         }else{
             return nil
         }
+    }
+}
+
+// Specialized Index implementation for Int
+extension DataFrame where I == Int {
+    private func validateIndexValueSync() -> Bool {
+        let expectedCount = indexes.count
+        return values.allSatisfy { $0.value.count == expectedCount }
+    }
+    
+    public func sorted() -> DataFrame<Int, T, F> {
+        // Create sorted indices and maintain value synchronization
+        let sortedPairs = zip(indexes, 0..<indexes.count).sorted { $0.0 < $1.0 }
+        let sortedIndices = sortedPairs.map { $0.0 }
+        let originalPositions = sortedPairs.map { $0.1 }
+        
+        var sortedValues: [F: [T]] = [:]
+        for (field, values) in self.values {
+            sortedValues[field] = originalPositions.map { values[$0] }
+        }
+        
+        return DataFrame(indexes: sortedIndices, values: sortedValues)
+    }
+    
+    public func binarySearch(for index: Int) -> Int? {
+        var left = 0
+        var right = indexes.count - 1
+        
+        while left <= right {
+            let mid = (left + right) / 2
+            if indexes[mid] == index {
+                return mid
+            } else if indexes[mid] < index {
+                left = mid + 1
+            } else {
+                right = mid - 1
+            }
+        }
+        return nil
+    }
+    
+    public subscript(index: Int) -> Row? {
+        guard let position = binarySearch(for: index) else { return nil }
+        var row: Row = [:]
+        for (field, values) in self.values {
+            row[field] = values[position]
+        }
+        return row
+    }
+    
+    public mutating func insert(index: Int, values: [F: T]) throws {
+        guard validateIndexValueSync() else {
+            throw DataFrameError.inconsistentDataSize
+        }
+        
+        if let position = binarySearch(for: index) {
+            // Update existing index
+            for (field, value) in values {
+                self.values[field]?[position] = value
+            }
+        } else {
+            // Insert new index
+            let insertPosition = indexes.firstIndex { $0 > index } ?? indexes.count
+            indexes.insert(index, at: insertPosition)
+            
+            // Insert values for provided fields
+            for (field, value) in values {
+                self.values[field, default: []].insert(value, at: insertPosition)
+            }
+            
+            // Insert default values for other fields to maintain synchronization
+            for field in self.fields where values[field] == nil {
+                if self.values[field]?.count != indexes.count {
+                    // Create a default value based on the type
+                    let defaultValue: T
+                    if let numericType = T.self as? any Numeric.Type {
+                        defaultValue = numericType.zero as! T
+                    } else if let stringType = T.self as? String.Type {
+                        defaultValue = "" as! T
+                    } else {
+                        // For other types, we need to handle them specifically
+                        throw DataFrameError.inconsistentDataSize
+                    }
+                    self.values[field]?.insert(defaultValue, at: insertPosition)
+                }
+            }
+        }
+    }
+    
+    public func range(from start: Int, to end: Int) -> DataFrame<Int, T, F>? {
+        guard let startIndex = indexes.firstIndex(where: { $0 >= start }),
+              let endIndex = indexes.lastIndex(where: { $0 <= end }) else {
+            return nil
+        }
+        
+        let rangeIndexes = Array(indexes[startIndex...endIndex])
+        var rangeValues: [F: [T]] = [:]
+        
+        for (field, values) in self.values {
+            rangeValues[field] = Array(values[startIndex...endIndex])
+        }
+        
+        return DataFrame(indexes: rangeIndexes, values: rangeValues)
+    }
+    
+    public mutating func remove(at index: Int) throws {
+        guard let position = binarySearch(for: index) else { return }
+        
+        indexes.remove(at: position)
+        for field in self.fields {
+            self.values[field]?.remove(at: position)
+        }
+        
+        guard validateIndexValueSync() else {
+            throw DataFrameError.inconsistentDataSize
+        }
+    }
+    
+    public func isSorted() -> Bool {
+        guard indexes.count > 1 else { return true }
+        for i in 1..<indexes.count {
+            if indexes[i] < indexes[i-1] {
+                return false
+            }
+        }
+        return true
+    }
+    
+    public func validate() -> Bool {
+        return validateIndexValueSync() && isSorted()
     }
 }
 

@@ -137,11 +137,11 @@ final class RZDataTests: XCTestCase {
         }
     }
     
-    func buildSampleDf<T>(input : [String:[T]]) -> DataFrame<Int,T,String>? {
+    func buildSampleDf<T>(input : [String:[T]], indexes: [Int]? = nil) -> DataFrame<Int,T,String>? {
         guard let sample = input.values.first else { XCTAssertTrue(false); return nil }
 
-        let df = DataFrame<Int,T,String>(indexes: Array(0...sample.count),
-                                               values: input)
+        let indexes : [Int] = indexes ?? Array(0...sample.count)
+        let df = DataFrame<Int,T,String>(indexes: indexes, values: input)
         return df
     }
     
@@ -230,6 +230,153 @@ final class RZDataTests: XCTestCase {
                     XCTAssertTrue(false)
                 }
             }
+        }
+    }
+    
+    // MARK: - Accelerate Optimized Statistics Tests
+    
+    func testBasicStatistics() {
+        // Test basic statistical operations (sum, mean, variance, std) on a simple dataset
+        let input: [String: [Double]] = [
+            "a": [1.0, 2.0, 3.0, 4.0],
+            "b": [10.0, 20.0, 30.0, 40.0]
+        ]
+        
+        if let df = self.buildSampleDf(input: input) {
+            // Test individual field statistics
+            XCTAssertEqual(df.sum(for: "a"), 10.0)
+            XCTAssertEqual(df.mean(for: "a"), 2.5)
+            // we are computing the sample Variance
+            XCTAssertEqual(df.variance(for: "a"), 5.0/3.0)
+            XCTAssertEqual(df.standardDeviation(for: "a"), sqrt(5.0/3.0))
+            
+            // Test all fields statistics
+            let allSums = df.sums()
+            XCTAssertEqual(allSums["a"], 10.0)
+            XCTAssertEqual(allSums["b"], 100.0)
+            
+            let allMeans = df.means()
+            XCTAssertEqual(allMeans["a"], 2.5)
+            XCTAssertEqual(allMeans["b"], 25.0)
+        }
+    }
+    
+    func testMinMaxStatistics() {
+        // Test min/max operations on various datasets
+        let input: [String: [Double]] = [
+            "positive": [1.0, 2.0, 3.0, 4.0],
+            "negative": [-4.0, -3.0, -2.0, -1.0],
+            "mixed": [-2.0, 0.0, 2.0, 4.0]
+        ]
+        
+        if let df = self.buildSampleDf(input: input) {
+            // Test individual field min/max
+            let positiveMinMax = df.minMax(for: "positive")
+            XCTAssertEqual(positiveMinMax?.min, 1.0)
+            XCTAssertEqual(positiveMinMax?.max, 4.0)
+            
+            // Test all fields min/max
+            let allMinMax = df.minMaxes()
+            XCTAssertEqual(allMinMax["negative"]?.min, -4.0)
+            XCTAssertEqual(allMinMax["negative"]?.max, -1.0)
+            XCTAssertEqual(allMinMax["mixed"]?.min, -2.0)
+            XCTAssertEqual(allMinMax["mixed"]?.max, 4.0)
+        }
+    }
+    
+    func testMovingAverage() {
+        // Test moving average calculations with different window sizes
+        let input: [String: [Double]] = [
+            "values": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+        ]
+        
+        if let df = self.buildSampleDf(input: input) {
+            // Test individual field moving average
+            let ma3 = df.movingAverage(for: "values", windowSize: 3)
+            XCTAssertEqual(ma3?[2], 2.0)  // (1+2+3)/3
+            XCTAssertEqual(ma3?[5], 5.0)  // (4+5+6)/3
+            
+            // Test all fields moving average
+            let allMA = df.movingAverages(windowSize: 5)
+            XCTAssertEqual(allMA["values"]?[4], 3.0)  // (1+2+3+4+5)/5
+            XCTAssertEqual(allMA["values"]?[9], 8.0)  // (6+7+8+9+10)/5
+        }
+    }
+    
+    func testCorrelation() {
+        // Test correlation calculations between different fields
+        let input: [String: [Double]] = [
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "y": [2.0, 4.0, 6.0, 8.0, 10.0],  // Perfect positive correlation
+            "z": [5.0, 4.0, 3.0, 2.0, 1.0]    // Perfect negative correlation
+        ]
+        
+        if let df = self.buildSampleDf(input: input) {
+            // Test individual field correlations
+            if let xyCorr = df.correlation(between: "x", and: "y") {
+                XCTAssertEqual(xyCorr, 1.0, accuracy: 0.0001)  // Perfect positive correlation
+            }
+            
+            if let xzCorr = df.correlation(between: "x", and: "z") {
+                XCTAssertEqual(xzCorr, -1.0, accuracy: 0.0001) // Perfect negative correlation
+            }
+            
+            // Test all fields correlations
+            let allCorr = df.correlations()
+            if let xyCorr = allCorr["x"]?["y"] {
+                XCTAssertEqual(xyCorr, 1.0, accuracy: 0.0001)
+            }
+            if let xzCorr = allCorr["x"]?["z"] {
+                XCTAssertEqual(xzCorr, -1.0, accuracy: 0.0001)
+            }
+        }
+    }
+    
+    func testIntIndexOptimizations() {
+        // Test specialized Int index optimizations
+        let input: [String: [Double]] = [
+            "values": [2.0, 3.0, 4.0, 5.0, 6.0]
+        ]
+        
+        if let df = self.buildSampleDf(input: input, indexes: Array(1...5)) {
+            // Test binary search
+            XCTAssertEqual(df.binarySearch(for: 2), 1)
+            XCTAssertEqual(df.binarySearch(for: 6), nil)
+            
+            // Test range query
+            let range = df.range(from: 1, to: 3)
+            XCTAssertEqual(range?.indexes, [1, 2, 3])
+            XCTAssertEqual(range?.values["values"], [2.0, 3.0, 4.0])
+            
+            // Test validation
+            XCTAssertTrue(df.validate())
+            XCTAssertTrue(df.isSorted())
+        }
+    }
+    
+    func testStatisticalEdgeCases() {
+        // Test statistical functions with edge cases
+        let input: [String: [Double]] = [
+            "empty": [],
+            "single": [42.0],
+            "nan": [1.0, Double.nan, 3.0],
+            "inf": [1.0, Double.infinity, 3.0]
+        ]
+        
+        if let df = self.buildSampleDf(input: input) {
+            // Test empty array handling
+            XCTAssertEqual(df.sum(for: "empty"), 0.0)
+            let mean = df.mean(for: "empty")
+            XCTAssertTrue(mean?.isNaN ?? false)
+            
+            // Test single value handling
+            XCTAssertEqual(df.sum(for: "single"), 42.0)
+            XCTAssertEqual(df.mean(for: "single"), 42.0)
+            XCTAssertEqual(df.variance(for: "single"), 0.0)
+            
+            // Test NaN and Inf handling
+            XCTAssertTrue(df.sum(for: "nan")?.isNaN ?? false)
+            XCTAssertTrue(df.sum(for: "inf")?.isInfinite ?? false)
         }
     }
 }
