@@ -137,7 +137,7 @@ final class RZDataTests: XCTestCase {
         }
     }
     
-    func buildSampleDf<T>(input : [String:[T]], indexes: [Int]? = nil) -> DataFrame<Int,T,String>? {
+    func buildSampleDf<T>(input : [String:[T]], indexes : [Int]? = nil) -> DataFrame<Int,T,String>? {
         guard let sample = input.values.first else { XCTAssertTrue(false); return nil }
 
         let indexes : [Int] = indexes ?? Array(0...sample.count)

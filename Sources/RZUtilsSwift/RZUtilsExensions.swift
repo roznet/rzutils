@@ -8,14 +8,14 @@
 import Foundation
 import RZUtils
 
-extension GCStatsDataSerie : Sequence {
+extension GCStatsDataSerie : @retroactive Sequence {
     public typealias Iterator = NSFastEnumerationIterator
     public func makeIterator() -> NSFastEnumerationIterator {
         return NSFastEnumerationIterator(self)
     }
 }
 
-extension GCNumberWithUnit : Comparable {
+extension GCNumberWithUnit : @retroactive Comparable {
     
     public static func < (lhs: GCNumberWithUnit, rhs: GCNumberWithUnit) -> Bool {
         return lhs.compare(rhs) == ComparisonResult.orderedAscending

@@ -84,7 +84,7 @@ extension UnitAngle {
 
 // MARK: - New Units Fitness
 
-class UnitHeartRate : Dimension {
+class UnitHeartRate : Dimension, @unchecked Sendable {
     public static let beatPerMinute = UnitHeartRate(symbol: "bpm", converter: UnitConverterLinear(coefficient: 1.0))
     
     static override func baseUnit() -> Self {
@@ -92,7 +92,7 @@ class UnitHeartRate : Dimension {
     }
 }
 
-public class UnitPercent : Dimension {
+public class UnitPercent : Dimension, @unchecked Sendable {
     public static let percentPerHundred = UnitPercent(symbol: "%", converter: UnitConverterLinear(coefficient: 1.0/100.0))
     public static let percentPerOne = UnitPercent(symbol: "", converter: UnitConverterLinear(coefficient: 1.0))
 
@@ -101,7 +101,7 @@ public class UnitPercent : Dimension {
     }
 }
 
-public class UnitDimensionLess : Dimension {
+public class UnitDimensionLess : Dimension, @unchecked Sendable {
     public static let scalar = UnitDimensionLess(symbol: "", converter: UnitConverterLinear(coefficient: 1.0))
     
     public static override func baseUnit() -> Self {
@@ -112,7 +112,7 @@ public class UnitDimensionLess : Dimension {
 
 // MARK: - New Units Airplane
 
-public class UnitFuelFlow : Dimension {
+public class UnitFuelFlow : Dimension, @unchecked Sendable {
     
     private static let oneGallonInLiters : Double = 3.785411784
     
@@ -126,7 +126,7 @@ public class UnitFuelFlow : Dimension {
     
 }
 
-public class UnitAngularVelocity : Dimension {
+public class UnitAngularVelocity : Dimension, @unchecked Sendable {
     public static let revolutionsPerMinute = UnitAngularVelocity(symbol: "rpm", converter: UnitConverterLinear(coefficient: 360.0/60.0))
     public static let degreesPerSecond = UnitAngularVelocity(symbol: "deg/sec", converter: UnitConverterLinear(coefficient: 1.0))
 
@@ -139,7 +139,7 @@ public class UnitAngularVelocity : Dimension {
 }
 
 
-public class UnitClimbGradient : Dimension {
+public class UnitClimbGradient : Dimension, @unchecked Sendable {
     
     public static var percent = UnitClimbGradient(symbol: "%", converter: UnitConverterLinear(coefficient: 1.0))
     public static var feetPerNauticalMile = UnitClimbGradient(symbol: "ft/nm", converter: UnitConverterLinear(coefficient: 100.0/6076.1155))

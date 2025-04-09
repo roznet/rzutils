@@ -1037,7 +1037,7 @@ extension DataFrame where I == Int {
                     let defaultValue: T
                     if let numericType = T.self as? any Numeric.Type {
                         defaultValue = numericType.zero as! T
-                    } else if let stringType = T.self as? String.Type {
+                    } else if T.self is String.Type {
                         defaultValue = "" as! T
                     } else {
                         // For other types, we need to handle them specifically
