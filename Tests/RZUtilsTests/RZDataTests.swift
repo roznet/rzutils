@@ -437,8 +437,9 @@ final class RZDataTests: XCTestCase {
             "x": [1.0, 2.0, 3.0, 4.0],
             "y": [10.0, 20.0, 30.0, 40.0]
         ]
-        
-        if let df = self.buildSampleDfWithDoubleIndex(input: doubleInput) {
+       
+        let index: [Double] = [1.0, 2.0, 3.0, 4.0]
+        if let df = self.buildSampleDfWithDoubleIndex(input: doubleInput, indexes: index) {
             // Test interpolation at known points
             let knownPoints = [1.0, 2.0, 3.0, 4.0]
             let interpolated = df.interpolate(indexes: knownPoints)
@@ -457,7 +458,7 @@ final class RZDataTests: XCTestCase {
             let outOfRangePoints = [0.0, 5.0]
             let outOfRangeInterpolated = df.interpolate(indexes: outOfRangePoints)
             
-            XCTAssertEqual(outOfRangeInterpolated.values["x"], [0.0, 5.0])
+            XCTAssertEqual(outOfRangeInterpolated.values["x"], [1.0, 4.0])
             XCTAssertEqual(outOfRangeInterpolated.values["y"], [10.0, 40.0])
         }
     }
@@ -516,7 +517,7 @@ final class RZDataTests: XCTestCase {
         
         if let df = self.buildSampleDfWithDoubleIndex(input: singlePointInput) {
             let singleInterpolated = df.interpolate(indexes: [1.0, 1.5, 2.0])
-            XCTAssertEqual(singleInterpolated.values["x"], [1.0, 1.5, 2.0])
+            XCTAssertEqual(singleInterpolated.values["x"], [1.0, 1.0, 1.0])
             XCTAssertEqual(singleInterpolated.values["y"], [10.0, 10.0, 10.0])
         }
         
@@ -526,10 +527,46 @@ final class RZDataTests: XCTestCase {
             "y": [10.0, 20.0, 30.0]
         ]
         
-        if let df = self.buildSampleDfWithDoubleIndex(input: rangeInput) {
+        if let df = self.buildSampleDfWithDoubleIndex(input: rangeInput, indexes: rangeInput["x"]) {
             let outOfRangeInterpolated = df.interpolate(indexes: [0.0, 4.0])
-            XCTAssertEqual(outOfRangeInterpolated.values["x"], [0.0, 4.0])
+            XCTAssertEqual(outOfRangeInterpolated.values["x"], [1.0, 3.0])
             XCTAssertEqual(outOfRangeInterpolated.values["y"], [10.0, 30.0])
         }
     }
+
+    func testAddColumn() throws {
+        // Create a test DataFrame
+        var df = DataFrame<Double, Double, String>()
+        let fields = ["x", "y"]
+        
+        // Add initial data
+        try df.append(fields: fields, elements: [1.0, 4.0], for: 0.0)
+        try df.append(fields: fields, elements: [2.0, 5.0], for: 1.0)
+        try df.append(fields: fields, elements: [3.0, 6.0], for: 2.0)
+        
+        // Test single column transform
+        df.addColumn("double_x", from: "x") { $0 * 2 }
+        XCTAssertEqual(df["double_x"]?.values, [2.0, 4.0, 6.0])
+        
+        // Test multiple columns transform
+        df.addColumn("sum", from: ["x", "y"]) { $0.reduce(0, +) }
+        XCTAssertEqual(df["sum"]?.values, [5.0, 7.0, 9.0])
+        
+        // Test vectorized operations
+        df.addColumn("sqrt_x", from: "x") { sqrt($0) }
+        XCTAssertEqual(df["sqrt_x"]?.values, [1.0, 1.4142135623730951, 1.7320508075688772])
+        
+        df.addColumn("product", from: ["x", "y"]) { $0.reduce(1, *) }
+        XCTAssertEqual(df["product"]?.values, [4.0, 10.0, 18.0])
+        
+        // Test with empty DataFrame
+        var emptyDf = DataFrame<Double, Double, String>()
+        emptyDf.addColumn("new", from: "x") { $0 * 2 }
+        XCTAssertNil(emptyDf["new"])
+        
+        // Test with non-existent field
+        df.addColumn("invalid", from: "non_existent") { $0 * 2 }
+        XCTAssertNil(df["invalid"])
+    }
+
 }

@@ -911,3 +911,47 @@ extension DataFrame {
     }
 }
 
+// Basic operations
+extension DataFrame {
+    // Create new column from single column
+    public mutating func addColumn(_ newField: F, from field: F, transform: (T) -> T) {
+        guard let values = self.values[field] else { return }
+        self.values[newField] = values.map(transform)
+    }
+    
+    // Create new column from multiple columns
+    public mutating func addColumn(_ newField: F, from fields: [F], transform: ([T]) -> T) {
+        guard !fields.isEmpty else { return }
+        let fieldValues = fields.compactMap { self.values[$0] }
+        guard !fieldValues.isEmpty else { return }
+        
+        var newValues: [T] = []
+        for i in 0..<self.count {
+            let values = fieldValues.map { $0[i] }
+            newValues.append(transform(values))
+        }
+        self.values[newField] = newValues
+    }
+}
+
+// Vectorized operations (for Double)
+extension DataFrame where T == Double {
+    public mutating func addColumn(_ newField: F, from field: F, operation: (Double) -> Double) {
+        guard let values = self.values[field] else { return }
+        self.values[newField] = values.map(operation)
+    }
+    
+    public mutating func addColumn(_ newField: F, from fields: [F], operation: ([Double]) -> Double) {
+        guard !fields.isEmpty else { return }
+        let fieldValues = fields.compactMap { self.values[$0] }
+        guard !fieldValues.isEmpty else { return }
+        
+        var newValues: [Double] = []
+        for i in 0..<self.count {
+            let values = fieldValues.map { $0[i] }
+            newValues.append(operation(values))
+        }
+        self.values[newField] = newValues
+    }
+}
+

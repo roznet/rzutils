@@ -107,3 +107,56 @@ extension DataFrame where T == Double, I == Date {
         return DataFrame(indexes: dates, values: interpolatedValues)
     }
 }
+
+extension DataFrame where T == Double {
+    /// Interpolates values at the given x values using linear interpolation, using a specific field as the independent variable
+    /// - Parameters:
+    ///   - xField: The field to use as the independent variable
+    ///   - xValues: The target x values to interpolate at
+    /// - Returns: A new DataFrame with interpolated values
+    public func interpolate(xField: F, xValues: [T]) -> DataFrame {
+        guard !self.indexes.isEmpty else { return DataFrame(fields: self.fields) }
+        guard let xFieldValues = self.values[xField] else { return DataFrame(fields: self.fields) }
+        
+        var interpolatedValues: [F: [T]] = [:]
+        let fields = self.fields
+        
+        // Pre-allocate arrays for each field
+        for field in fields {
+            interpolatedValues[field] = [T](repeating: 0.0, count: xValues.count)
+        }
+        
+        // For each target x value
+        for (i, targetX) in xValues.enumerated() {
+            // Find the surrounding points for interpolation
+            let lowerIndex = xFieldValues.lastIndex { $0 <= targetX } ?? 0
+            let upperIndex = xFieldValues.firstIndex { $0 >= targetX } ?? (xFieldValues.count - 1)
+            
+            // Handle edge cases
+            if lowerIndex == upperIndex {
+                // Exact match or edge case
+                for field in fields {
+                    if let values = self.values[field], lowerIndex < values.count {
+                        interpolatedValues[field]?[i] = values[lowerIndex]
+                    }
+                }
+            } else {
+                // Linear interpolation
+                let x0 = xFieldValues[lowerIndex]
+                let x1 = xFieldValues[upperIndex]
+                let t = (targetX - x0) / (x1 - x0)
+                
+                for field in fields {
+                    if let values = self.values[field],
+                       lowerIndex < values.count && upperIndex < values.count {
+                        let y0 = values[lowerIndex]
+                        let y1 = values[upperIndex]
+                        interpolatedValues[field]?[i] = y0 + t * (y1 - y0)
+                    }
+                }
+            }
+        }
+        
+        return DataFrame(indexes: self.indexes, values: interpolatedValues)
+    }
+}
