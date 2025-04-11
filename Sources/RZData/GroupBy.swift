@@ -15,7 +15,7 @@ extension DataFrame  {
         private var end : I?
         
         // Output Variable
-        private(set) var currentExtractIndex : I
+        private(set) var currentExtractIndex : I?
         private(set) var beforeStart : Bool = false
         private(set) var afterEnd : Bool = false
         private(set) var reachedNext : Bool = false
@@ -24,27 +24,27 @@ extension DataFrame  {
               start : I?,
               end : I?)
         {
-            // require at least one extractIndex and one Index
-            if let firstExtractIndex = extractIndexes.first{
-                self.start = start
-                self.end = end
-                
-                self.currentExtractIndex = firstExtractIndex
-                self.remainingIndexes = [I](extractIndexes.dropFirst())
-                
-            }else{
+            guard extractIndexes.isEmpty == false else {
                 return nil
             }
+            self.start = start
+            self.end = end
+            self.currentExtractIndex = start
+            
+            self.remainingIndexes = extractIndexes
         }
         
         mutating func next() {
-            if let first = self.remainingIndexes.first {
-                self.currentExtractIndex = first
-                self.remainingIndexes = [I](self.remainingIndexes.dropFirst())
-            }
+            self.currentExtractIndex = self.remainingIndexes.first
+            self.remainingIndexes = [I](self.remainingIndexes.dropFirst())
         }
         
         mutating func looking(at index : I){
+            // if we didn't have initial extractIndex, we'll use the first index found
+            if self.currentExtractIndex == nil {
+                self.currentExtractIndex = index
+            }
+            
             self.beforeStart = self.start != nil && index < self.start!
             self.afterEnd = self.end != nil && index > self.end!
             
@@ -56,14 +56,59 @@ extension DataFrame  {
         }
     }
 
-    /// Will extract and compute parameters
-    /// will compute statistics between date in the  array returning one stats per dates, the stats will start form the first value up to the
-    /// first date in the input value, if the last date is before the end of the data, the end is skipped
-    /// if a start is provided the stats starts from the first available row of data
-    /// - Parameter dates: array of dates corresponding to the first date of the leg
-    /// - Parameter start:first date to start statistics or nil for first date in data
-    /// - Parameter end: last date (included) to collect statistics or nil for last date in data
-    /// - Returns: statisitics computed between dates
+    /// Extracts and aggregates data between specified indexes, creating a new DataFrame with aggregated results.
+    ///
+    /// This function processes the DataFrame by grouping data between consecutive indexes and applying
+    /// aggregation functions to each group. It's particularly useful for time series analysis, segmenting
+    /// data into meaningful intervals, and calculating running aggregates.
+    ///
+    /// - Parameters:
+    ///   - extractIndexes: Array of indexes that define the boundaries of each group. Data will be aggregated
+    ///     between consecutive indexes. The indexes must be in ascending order.
+    ///   - createCollector: A closure that creates the initial aggregated value for a field. This is called
+    ///     when processing the first value in a new group.
+    ///   - updateCollector: A closure that updates the aggregated value with new data. This is called for
+    ///     each subsequent value in the group.
+    ///   - start: Optional starting index. If provided, data before this index will be ignored.
+    ///   - end: Optional ending index. If provided, data after this index will be ignored.
+    ///
+    /// - Returns: A new DataFrame where each row corresponds to an interval between indexes, containing
+    ///   the aggregated values for each field.
+    ///
+    /// - Throws: An error if the DataFrame operations fail.
+    ///
+    /// # Example
+    /// ```swift
+    /// // Calculate running averages between specific dates
+    /// struct RunningAverage {
+    ///     var sum: Double
+    ///     var count: Int
+    ///     
+    ///     init(value: Double) {
+    ///         self.sum = value
+    ///         self.count = 1
+    ///     }
+    ///     
+    ///     mutating func update(value: Double) {
+    ///         sum += value
+    ///         count += 1
+    ///     }
+    ///     
+    ///     var average: Double { sum / Double(count) }
+    /// }
+    ///
+    /// let result = try df.extract(
+    ///     indexes: [date1, date2, date3],
+    ///     createCollector: { _, value in RunningAverage(value: value) },
+    ///     updateCollector: { collector, value in collector?.update(value: value) }
+    /// )
+    /// ```
+    ///
+    /// # Notes
+    /// - The function maintains the order of the original data
+    /// - Empty intervals (no data between indexes) will be skipped
+    /// - The collector type `C` must be able to handle the aggregation logic for your specific use case
+    /// - For statistical operations, consider using the specialized `extractValueStats` or `extractCategoricalStats` methods
     public func extract<C>(indexes extractIndexes : [I],
                     createCollector : (F,T) -> C,
                     updateCollector : (inout C?,T) -> Void,
@@ -92,7 +137,11 @@ extension DataFrame  {
                 
                 if indexExtract.reachedNext {
                     do {
-                        try rv.append(fieldsValues: current, for: indexExtract.currentExtractIndex)
+                        if let currentExtractIndex = indexExtract.currentExtractIndex {
+                            try rv.append(fieldsValues: current, for: currentExtractIndex)
+                        }else{
+                            throw DataFrameError.inconsistentIndexOrder
+                        }
                     }catch{
                         throw error
                     }
@@ -113,7 +162,11 @@ extension DataFrame  {
             // add last one if still there
             if current.count > 0 {
                 do {
-                    try rv.append(fieldsValues: current, for: indexExtract.currentExtractIndex)
+                    if let currentExtractIndex = indexExtract.currentExtractIndex {
+                        try rv.append(fieldsValues: current, for: currentExtractIndex)
+                    }else{
+                        throw DataFrameError.inconsistentIndexOrder
+                    }
                 }catch{
                     throw error
                 }
@@ -124,46 +177,46 @@ extension DataFrame  {
 }
 
 extension DataFrame where T == Double {
-    public func describeValues(weight column : F? = nil, units : [F:Dimension] = [:]) -> [F:ValueStats] {
-        var rv : [F:ValueStats] = [:]
-        guard self.indexes.count > 0 else { return rv }
-        
-        var weights : [T] = []
-        if let column = column, let weightValues = self.values[column] {
-            weights = weightValues
-        }
-        
-        for (col,vals) in self.values {
-            if let column = column, col == column {
-                // don't do stats on the weight column
-                continue
-            }
-            var stats : ValueStats? = nil
-            let hasWeights = (weights.count == vals.count)
-            for (idx,val) in vals.enumerated() {
-                let weight = hasWeights ? weights[idx] : 1.0
-                if stats == nil {
-                    stats = ValueStats(value: val, weight: weight, unit: units[col])
-                }else{
-                    stats?.update(double: val, weight: weight)
-                }
-            }
-            
-            rv[col] = stats
-        }
-        return rv
+    public func describeValues(weights column : F? = nil, units : [F:Dimension] = [:]) -> [F:ValueStats] {
+        // Use valueStats function with the entire range and specified weights
+        return self.valueStats(weights: column, units: units )
     }
     
     
-    /// Will extract and compute parameters
-    /// will compute statistics `ValueStats` between date in the  array returning one stats per dates,
-    /// the stats will start form the first value up to the
-    /// first date in the input value, if the last date is before the end of the data, the end is skipped
-    /// if a start is provided the stats starts from the first available row of data
-    /// - Parameter dates: array of dates corresponding to the first date of the leg
-    /// - Parameter start:first date to start statistics or nil for first date in data
-    /// - Parameter end: last date (included) to collect statistics or nil for last date in data
-    /// - Returns: statisitics computed between dates
+    /// Extracts and computes statistical values between specified indexes, creating a new DataFrame with ValueStats for each interval.
+    ///
+    /// This function processes the DataFrame by grouping data between consecutive indexes and calculating
+    /// statistical measures (mean, variance, etc.) for each group. It's particularly useful for analyzing
+    /// numerical data over time periods or other ordered intervals.
+    ///
+    /// - Parameters:
+    ///   - extractIndexes: Array of indexes that define the boundaries of each group. Statistics will be calculated
+    ///     between consecutive indexes. The indexes must be in ascending order.
+    ///   - start: Optional starting index. If provided, data before this index will be ignored.
+    ///   - end: Optional ending index. If provided, data after this index will be ignored.
+    ///   - units: Dictionary mapping field names to their corresponding units of measurement. This is used
+    ///     for proper unit handling in statistical calculations.
+    ///
+    /// - Returns: A new DataFrame where each row corresponds to an interval between indexes, containing
+    ///   ValueStats objects for each field.
+    ///
+    /// - Throws: An error if the DataFrame operations fail.
+    ///
+    /// # Example
+    /// ```swift
+    /// // Calculate statistics for each day
+    /// let dailyStats = try df.extractValueStats(
+    ///     indexes: [date1, date2, date3],
+    ///     units: ["temperature": .celsius, "pressure": .pascals]
+    /// )
+    /// ```
+    ///
+    /// # Notes
+    /// - The function maintains the order of the original data
+    /// - Empty intervals (no data between indexes) will be skipped
+    /// - Statistics are calculated using the ValueStats type, which provides mean, variance, standard deviation,
+    ///   and other statistical measures
+    /// - Units are preserved in the statistical calculations
     public func extractValueStats(indexes extractIndexes : [I],
                  start : I? = nil,
                  end : I? = nil,
@@ -191,7 +244,11 @@ extension DataFrame where T == Double {
                 
                 if indexExtract.reachedNext {
                     do {
-                        try rv.append(fieldsValues: current, for: indexExtract.currentExtractIndex)
+                        if let currentExtractIndex = indexExtract.currentExtractIndex {
+                            try rv.append(fieldsValues: current, for: currentExtractIndex)
+                        }else{
+                            throw DataFrameError.inconsistentIndexOrder
+                        }
                     }catch{
                         throw error
                     }
@@ -213,7 +270,11 @@ extension DataFrame where T == Double {
             // add last one if still there
             if current.count > 0 {
                 do {
-                    try rv.append(fieldsValues: current, for: indexExtract.currentExtractIndex)
+                    if let currentExtractIndex = indexExtract.currentExtractIndex {
+                        try rv.append(fieldsValues: current, for: currentExtractIndex)
+                    }else{
+                        throw DataFrameError.inconsistentIndexOrder
+                    }
                 }catch{
                     throw error
                 }
@@ -245,14 +306,37 @@ extension DataFrame where T : Hashable {
         return rv
     }
 
-    /// Will extract and compute parameters
-    /// will compute statistics between date in the  array returning one stats per dates, the stats will start form the first value up to the
-    /// first date in the input value, if the last date is before the end of the data, the end is skipped
-    /// if a start is provided the stats starts from the first available row of data
-    /// - Parameter dates: array of dates corresponding to the first date of the leg
-    /// - Parameter start:first date to start statistics or nil for first date in data
-    /// - Parameter end: last date (included) to collect statistics or nil for last date in data
-    /// - Returns: statisitics computed between dates
+    /// Extracts and computes categorical statistics between specified indexes, creating a new DataFrame with CategoricalStats for each interval.
+    ///
+    /// This function processes the DataFrame by grouping data between consecutive indexes and calculating
+    /// frequency distributions and other categorical statistics for each group. It's particularly useful for
+    /// analyzing discrete or categorical data over time periods or other ordered intervals.
+    ///
+    /// - Parameters:
+    ///   - extractIndexes: Array of indexes that define the boundaries of each group. Statistics will be calculated
+    ///     between consecutive indexes. The indexes must be in ascending order.
+    ///   - start: Optional starting index. If provided, data before this index will be ignored.
+    ///   - end: Optional ending index. If provided, data after this index will be ignored.
+    ///
+    /// - Returns: A new DataFrame where each row corresponds to an interval between indexes, containing
+    ///   CategoricalStats objects for each field.
+    ///
+    /// - Throws: An error if the DataFrame operations fail.
+    ///
+    /// # Example
+    /// ```swift
+    /// // Calculate categorical statistics for each day
+    /// let dailyCategories = try df.extractCategoricalStats(
+    ///     indexes: [date1, date2, date3]
+    /// )
+    /// ```
+    ///
+    /// # Notes
+    /// - The function maintains the order of the original data
+    /// - Empty intervals (no data between indexes) will be skipped
+    /// - Statistics are calculated using the CategoricalStats type, which provides frequency distributions,
+    ///   mode, and other categorical measures
+    /// - The generic type T must conform to Hashable for categorical analysis
     public func extractCategoricalStats(indexes extractIndexes : [I],
                  start : I? = nil,
                  end : I? = nil) throws -> DataFrame<I,CategoricalStats<T>,F> {
@@ -279,7 +363,11 @@ extension DataFrame where T : Hashable {
                 
                 if indexExtract.reachedNext {
                     do {
-                        try rv.append(fieldsValues: current, for: indexExtract.currentExtractIndex)
+                        if let currentExtractIndex = indexExtract.currentExtractIndex {
+                            try rv.append(fieldsValues: current, for: currentExtractIndex)
+                        }else{
+                            throw DataFrameError.inconsistentIndexOrder
+                        }
                     }catch{
                         throw error
                     }
@@ -301,7 +389,11 @@ extension DataFrame where T : Hashable {
             // add last one if still there
             if current.count > 0 {
                 do {
-                    try rv.append(fieldsValues: current, for: indexExtract.currentExtractIndex)
+                    if let currentExtractIndex = indexExtract.currentExtractIndex {
+                        try rv.append(fieldsValues: current, for: currentExtractIndex)
+                    }else{
+                        throw DataFrameError.inconsistentIndexOrder
+                    }
                 }catch{
                     throw error
                 }

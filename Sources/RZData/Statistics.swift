@@ -86,7 +86,38 @@ extension DataFrame where T == Double {
         return DataFrame<Double,Double,F>(indexes: quantiles, values: calculated)
     }
     
-    public func valueStats(from : I? = nil, to : I? = nil, units : [F:Dimension] = [:], weightsField : F? = nil) -> [F:ValueStats] {
+    /// Calculates statistical values for each field in the DataFrame over a specified range of indexes.
+    ///
+    /// This function computes various statistics including sum, weighted sum, min, max, and count for each field
+    /// in the DataFrame. The statistics can be calculated over a specific range of indexes or the entire DataFrame.
+    ///
+    /// - Parameters:
+    ///   - from: The starting index (inclusive). If nil, starts from the first index.
+    ///   - to: The ending index (inclusive). If nil, goes to the last index.
+    ///   - units: A dictionary mapping field names to their corresponding units (Dimension type).
+    ///   - weightsField: The name of the field to use as weights. If nil, all weights are set to 1.0.
+    ///
+    /// - Returns: A dictionary mapping field names to their corresponding ValueStats.
+    ///
+    /// - Note:
+    ///   - The range is inclusive of both start and end indexes.
+    ///   - If the specified range is empty or invalid, returns an empty dictionary.
+    ///   - If weightsField is specified but not found, uses uniform weights of 1.0.
+    ///   - Uses Accelerate framework for efficient computation of statistics.
+    ///
+    /// - Example:
+    ///   ```swift
+    ///   let df = DataFrame<Double,Double,String>(indexes: [1.0, 2.0, 3.0],
+    ///                                           values: ["x": [1.0, 2.0, 3.0],
+    ///                                                   "y": [2.0, 4.0, 6.0]])
+    ///   // Get stats for the entire range
+    ///   let allStats = df.valueStats()
+    ///   // Get stats for a specific range
+    ///   let rangeStats = df.valueStats(from: 1.0, to: 2.0)
+    ///   // Get stats with weights
+    ///   let weightedStats = df.valueStats(weights: "weights")
+    ///   ```
+    public func valueStats(from : I? = nil, to : I? = nil, weights weightsField : F? = nil, units : [F:Dimension] = [:] ) -> [F:ValueStats] {
         var rv : [F:ValueStats] = [:]
         
         // Find the range of indexes to process

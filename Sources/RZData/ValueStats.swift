@@ -74,9 +74,17 @@ public struct ValueStats {
     }
     
     public mutating func update(double value : Double, weight : Double = 1) {
-        // if we got initial value correct
-        if self.start.isFinite {
-            if value.isFinite {
+        guard self.start.isFinite || value.isFinite else {
+            self.end = Double.nan
+            self.sum = Double.nan
+            self.sumSquare = Double.nan
+            self.max = Double.nan
+            self.min = Double.nan
+            self.count = value.isFinite ? self.count + 1 : 1
+            self.weight = weight
+            self.weightedSum = Double.nan
+            return
+        }
                 self.end = value
                 self.sum += value
                 self.sumSquare += value*value
@@ -85,18 +93,6 @@ public struct ValueStats {
                 self.count += 1
                 self.weight += weight
                 self.weightedSum += value * weight
-            }
-        }else{
-            self.start = value
-            self.end = value
-            self.sum = value
-            self.sumSquare = value*value
-            self.max = value
-            self.min = value
-            self.count = value.isFinite ? 1 : 0
-            self.weight = weight
-            self.weightedSum = value * weight
-        }
     }
     
     //MARK: Metrics

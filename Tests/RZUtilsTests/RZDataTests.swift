@@ -199,22 +199,15 @@ final class RZDataTests: XCTestCase {
                             "b" : [8.0, 4.0, 12.0, 16.0],
                             "w" : weights]
         if let df = self.buildSampleDfWithIntIndex(input: weightInput) {
-            let des = df.describeValues(weight: "w")
-            XCTAssertNil(des["w"])
+            let des = df.describeValues(weights: "w")
             
             for (col,vals) in weightInput {
-                if col == "w" {
-                    continue
-                }
                 if let stats = des[col] {
                     XCTAssertEqual(stats.count,vals.count)
                     XCTAssertEqual(stats.max,vals.max())
                     XCTAssertEqual(stats.min,vals.min())
                     XCTAssertEqual(stats.sum,vals.reduce(0, +))
-                    if let first = vals.first {
-                        XCTAssertEqual(stats.weightedSum,first * weights.reduce(0,+))
-                        XCTAssertEqual(stats.weightedAverage,first)
-                    }
+                    XCTAssertEqual(stats.weightedSum,zip(vals, weights).map(*).reduce(0,+))
                 }else{
                     XCTAssertTrue(false)
                 }
@@ -702,7 +695,7 @@ final class RZDataTests: XCTestCase {
         ]
         
         if let df = self.buildSampleDfWithIntIndex(input: input) {
-            let stats = df.valueStats(from: 0, to: 4, weightsField: "weights")
+            let stats = df.valueStats(from: 0, to: 4, weights: "weights")
             
             if let valueStats = stats["values"] {
                 XCTAssertEqual(valueStats.count, 5)
@@ -710,6 +703,196 @@ final class RZDataTests: XCTestCase {
                 XCTAssertEqual(valueStats.weightedSum, (1.0*0.5 + 2.0*1.0 + 3.0*1.5 + 4.0*2.0 + 5.0*2.5))
                 XCTAssertEqual(valueStats.weight, 7.5) // Sum of weights
                 XCTAssertEqual(valueStats.weightedAverage, (1.0*0.5 + 2.0*1.0 + 3.0*1.5 + 4.0*2.0 + 5.0*2.5)/7.5)
+            }
+        }
+    }
+
+    // MARK: - Extract Statistics Tests
+    
+    func testExtractValueStats() throws {
+        // Test basic value stats extraction
+        let input: [String: [Double]] = [
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "y": [10.0, 20.0, 30.0, 40.0, 50.0]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
+            // Extract stats at specific indexes
+            let extracted = try df.extractValueStats(
+                indexes: [1, 3],
+                start: 0,
+                end: 5,
+                units: ["x": UnitLength.meters, "y": UnitLength.centimeters]
+            )
+            
+            // Verify the extracted stats
+            XCTAssertEqual(extracted.indexes, [0, 1, 3])
+            
+            // Check stats for first interval (0-1)
+            if let xStats = extracted.values["x"]?[0] {
+                XCTAssertEqual(xStats.count, 1)
+                XCTAssertEqual(xStats.sum, 1.0) // 1 + 2
+                XCTAssertEqual(xStats.average, 1.0)
+                XCTAssertEqual(xStats.start, 1.0)
+                XCTAssertEqual(xStats.end, 1.0)
+            }
+            
+            // Check stats for second interval (1-3)
+            if let yStats = extracted.values["y"]?[1] {
+                XCTAssertEqual(yStats.count, 2)
+                XCTAssertEqual(yStats.sum, 20.0+30.0)
+                XCTAssertEqual(yStats.average, (20.0+30.0)/2)
+                XCTAssertEqual(yStats.start, 20.0)
+                XCTAssertEqual(yStats.end, 30.0)
+            }
+            
+            // Test with empty range
+            let emptyExtracted = try df.extractValueStats(
+                indexes: [10, 20],
+                start: 10,
+                end: 20
+            )
+            XCTAssertEqual(emptyExtracted.count, 0)
+            
+            // Test with single index, with no specifiy start / end
+            let singleExtracted = try df.extractValueStats(
+                indexes: [2]
+            )
+            XCTAssertEqual(singleExtracted.count, 2)
+            if let xStats = singleExtracted.values["y"]?[0] {
+                XCTAssertEqual(xStats.count, 2)
+                XCTAssertEqual(xStats.sum, 10.0+20.0)
+                XCTAssertEqual(xStats.average, (10.0+20.0)/2.0)
+            }
+            if let xStats = singleExtracted.values["x"]?[1] {
+                XCTAssertEqual(xStats.count, 3)
+                XCTAssertEqual(xStats.sum, 3.0+4.0+5.0) // 1 + 2 + 3
+                XCTAssertEqual(xStats.average, (3.0+4.0+5.0)/3.0)
+            }
+        }
+    }
+    
+    func testExtractCategoricalStats() throws {
+        // Test basic categorical stats extraction
+        let input: [String: [String]] = [
+            "category": ["A", "A", "B", "B", "C"],
+            "status": ["active", "inactive", "active", "active", "inactive"]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
+            // Extract stats at specific indexes
+            let extracted = try df.extractCategoricalStats(
+                indexes: [2, 4],
+                start: 0,
+                end: 5
+            )
+            
+            // Verify the extracted stats
+            XCTAssertEqual(extracted.indexes, [0, 2, 4 ])
+            
+            // Check stats for first interval (0-1)
+            if let categoryStats = extracted.values["category"]?[0] {
+                XCTAssertEqual(categoryStats.count, 2)
+                XCTAssertEqual(categoryStats.start, "A")
+                XCTAssertEqual(categoryStats.end, "A")
+            }
+            if let statusStats = extracted.values["status"]?[0] {
+                XCTAssertEqual(statusStats.count, 2)
+                XCTAssertEqual(statusStats.start, "active")
+                XCTAssertEqual(statusStats.end, "inactive")
+            }
+
+            // Check stats for second interval (1-3)
+            if let statusStats = extracted.values["status"]?[1] {
+                XCTAssertEqual(statusStats.count, 2)
+                XCTAssertEqual(statusStats.start, "active")
+                XCTAssertEqual(statusStats.end, "active")
+            }
+            
+            // Test with empty range
+            let emptyExtracted = try df.extractCategoricalStats(
+                indexes: [10, 20],
+                start: 10,
+                end: 20
+            )
+            XCTAssertEqual(emptyExtracted.count, 0)
+            
+            // Test with single point
+            let singleExtracted = try df.extractCategoricalStats(
+                indexes: [2],
+                start: 0,
+                end: 5
+            )
+            XCTAssertEqual(singleExtracted.count, 2)
+            if let categoryStats = singleExtracted.values["category"]?[0] {
+                XCTAssertEqual(categoryStats.count, 2)
+                XCTAssertEqual(categoryStats.start, "A")
+                XCTAssertEqual(categoryStats.end, "A")
+            }
+            if let categoryStats = singleExtracted.values["status"]?[1] {
+                XCTAssertEqual(categoryStats.count, 3)
+                XCTAssertEqual(categoryStats.start, "active")
+                XCTAssertEqual(categoryStats.end, "inactive")
+            }
+        }
+    }
+    
+    func testExtractValueStatsEdgeCases() throws {
+        // Test with empty DataFrame
+        let emptyDf = DataFrame<Int, Double, String>()
+        let emptyExtracted = try emptyDf.extractValueStats(
+            indexes: [1, 2, 3],
+            start: 0,
+            end: 5
+        )
+        XCTAssertEqual(emptyExtracted.count, 0)
+        
+        // Test with NaN values
+        let nanInput: [String: [Double]] = [
+            "values": [1.0, Double.nan, 3.0, 4.0, 5.0]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: nanInput) {
+            let extracted = try df.extractValueStats(
+                indexes: [3, 5],
+                start: 0,
+                end: 5
+            )
+            
+            if let stats = extracted.values["values"]?[0] {
+                XCTAssertEqual(stats.count, 3)
+                XCTAssertTrue(stats.sum.isNaN)
+                XCTAssertTrue(stats.average.isNaN)
+            }
+        }
+    }
+    
+    func testExtractCategoricalStatsEdgeCases() throws {
+        // Test with empty DataFrame
+        let emptyDf = DataFrame<Int, String, String>()
+        let emptyExtracted = try emptyDf.extractCategoricalStats(
+            indexes: [1, 2, 3],
+            start: 0,
+            end: 5
+        )
+        XCTAssertEqual(emptyExtracted.count, 0)
+        
+        // Test with single value
+        let singleInput: [String: [String]] = [
+            "value": ["A"]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: singleInput) {
+            let extracted = try df.extractCategoricalStats(
+                indexes: [0, 1],
+                start: 0,
+                end: 1
+            )
+            
+            if let stats = extracted.values["value"]?[0] {
+                XCTAssertEqual(stats.count, 1)
+                XCTAssertEqual(stats.start, "A")
+                XCTAssertEqual(stats.end, "A")
             }
         }
     }
