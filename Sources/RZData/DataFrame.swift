@@ -9,55 +9,114 @@ import Foundation
 import CoreLocation
 import Accelerate
 
-//DataFrame
-public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
+/// A DataFrame is a two-dimensional, size-mutable, potentially heterogeneous tabular data structure.
+/// It provides a flexible and efficient way to store and manipulate data with labeled columns and rows.
+///
+/// The DataFrame is generic over three types:
+/// - `I`: The index type (must be Comparable & Hashable)
+/// - `T`: The value type
+/// - `F`: The field/column name type (must be Hashable)
+///
+/// Example usage:
+/// ```swift
+/// // Create a DataFrame with Double values and String field names
+/// var df = DataFrame<Int, Double, String>()
+/// 
+/// // Add data
+/// try df.append(field: "temperature", element: 25.5, for: 1)
+/// try df.append(field: "humidity", element: 60.0, for: 1)
+/// 
+/// // Access data
+/// if let tempColumn = df["temperature"] {
+///     print(tempColumn.values) // [25.5]
+/// }
+/// ```
+public struct DataFrame<I: Comparable & Hashable, T, F: Hashable>: Sequence {
+    public typealias Element = (index: I, row: [F:T])
+    
     //MARK: - Type definitions
+    
+    /// Errors that can occur during DataFrame operations
     public enum DataFrameError : Error {
+        /// Thrown when attempting to append data with an index that would break the sorted order
         case inconsistentIndexOrder
+        /// Thrown when the number of values doesn't match the number of indexes
         case inconsistentDataSize
+        /// Thrown when attempting to access a field that doesn't exist
         case unknownField(F)
     }
     
-    //Row
+    /// Represents a single row of data in the DataFrame
     public typealias Row = [F:T]
     
+    /// Represents a single data point with its index and value
     public struct Point {
+        /// The index of the data point
         public let index : I
+        /// The value of the data point
         public let value : T
     }
     
-    //Column
+    /// Represents a column of data in the DataFrame
     public struct Column {
+        /// The indexes corresponding to each value in the column
         public let indexes : [I]
+        /// The values in the column
         public let values : [T]
         
-        public var first : Point? { guard let i = indexes.first, let v = values.first else { return nil }; return Point(index: i, value: v) }
-        public var last : Point? { guard let i = indexes.last, let v = values.last else { return nil }; return Point(index: i, value: v) }
-        public var count : Int { return indexes.count }
-        
-        public func dropFirst(_ k : Int) -> Column {
-            return Column(indexes: [I]( self.indexes.dropFirst(k) ), values: [T]( self.values.dropFirst(k)) )
+        /// Returns the first point in the column, if any
+        public var first : Point? { 
+            guard let i = indexes.first, let v = values.first else { return nil }
+            return Point(index: i, value: v) 
         }
         
+        /// Returns the last point in the column, if any
+        public var last : Point? { 
+            guard let i = indexes.last, let v = values.last else { return nil }
+            return Point(index: i, value: v) 
+        }
+        
+        /// The number of elements in the column
+        public var count : Int { return indexes.count }
+        
+        /// Returns a new column with the first k elements removed
+        public func dropFirst(_ k : Int) -> Column {
+            return Column(indexes: [I](self.indexes.dropFirst(k)), 
+                         values: [T](self.values.dropFirst(k)))
+        }
+        
+        /// Creates a new column with the given indexes and values
         public init(indexes: [I], values: [T]) {
             self.indexes = indexes
             self.values = values
         }
+        
+        /// Accesses the value at the specified index
         public subscript(_ idx : Int) -> T? {
             return self.values.indices.contains(idx) ? self.values[idx] : nil
         }
     }
     
+    //MARK: - Stored properties
     
-    //MARK: - stored property
+    /// The indexes (row labels) of the DataFrame
     public private(set) var indexes : [I]
+    
+    /// The values stored in the DataFrame, organized by field name
     public private(set) var values : [F:[T]]
     
-    //MARK: - calc property
+    //MARK: - Computed properties
+    
+    /// Returns an array of all field names in the DataFrame
     public var fields : [F] { return Array(values.keys) }
+    
+    /// Returns the number of rows in the DataFrame
     public var count : Int { return indexes.count }
     
-    //MARK: - init and setup
+    //MARK: - Initialization
+    
+    /// Creates an empty DataFrame with the specified fields
+    /// - Parameter fields: The field names to initialize
     public init(fields : [F]){
         indexes = []
         values = [:]
@@ -66,16 +125,27 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         }
     }
     
+    /// Creates a DataFrame with the given indexes and values
+    /// - Parameters:
+    ///   - indexes: The row indexes
+    ///   - values: The values organized by field name
     public init(indexes : [I], values: [F:[T]]){
         self.indexes = indexes
         self.values = values
     }
     
+    /// Creates an empty DataFrame
     public init() {
         indexes = []
         values = [:]
     }
     
+    /// Creates a DataFrame from arrays of indexes, fields, and rows
+    /// - Parameters:
+    ///   - indexes: The row indexes
+    ///   - fields: The field names
+    ///   - rows: The data rows, where each row is an array of values
+    /// - Note: The number of values in each row must match the number of fields
     public init(indexes : [I], fields : [F], rows : [[T]]){
         self.indexes = []
         self.values = [:]
@@ -102,13 +172,10 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
             }
             // edge case date is repeated
             if self.indexes.count == 0 || index != lastindex {
-                // for some reason doing it manually here is much faster than calling function on dataframe?
                 self.indexes.append(index)
                 for (field,element) in zip(fields,row) {
-                    //self.values[field, default: []].append(element)
                     self.values[field]?.append(element)
                 }
-
                 lastindex = index
             }
         }
@@ -127,6 +194,41 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         self.values = v
     }
     
+    //MARK: - Private Helpers
+    
+    /// Checks if the new index maintains the sorted order and updates the indexes array
+    /// - Parameter index: The new index to check and potentially add
+    /// - Throws: `DataFrameError.inconsistentIndexOrder` if the index would break the sorted order
+    private mutating func indexCheckAndUpdate(index : I) throws {
+        if let last = indexes.last {
+            if index > last {
+                indexes.append(index)
+            } else if index < last {
+                throw DataFrameError.inconsistentIndexOrder
+            }
+        } else {
+            // nothing yet, insert date
+            indexes.append(index)
+        }
+    }
+    
+    /// Updates a field with a new value and checks for consistency
+    /// - Parameters:
+    ///   - field: The field to update
+    ///   - element: The value to append
+    /// - Throws: `DataFrameError.inconsistentDataSize` if the number of values becomes inconsistent
+    private mutating func updateField(field : F, element : T) throws {
+        values[field, default: []].append(element)
+        
+        if values[field, default: []].count != indexes.count {
+            throw DataFrameError.inconsistentDataSize
+        }
+    }
+    
+    //MARK: - Data Manipulation
+    
+    /// Reserves enough space to store the specified number of elements
+    /// - Parameter capacity: The number of elements to reserve space for
     mutating public func reserveCapacity(_ capacity : Int){
         indexes.reserveCapacity(capacity)
         for k in values.keys {
@@ -134,6 +236,8 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         }
     }
     
+    /// Clears all data from the DataFrame
+    /// - Parameter fields: Optional list of fields to keep (empty by default)
     mutating public func clear(fields : [F] = []) {
         indexes = []
         values = [:]
@@ -142,33 +246,24 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         }
     }
     
-    //MARK: - modify, append
-    private mutating func indexCheckAndUpdate(index : I) throws {
-        if let last = indexes.last {
-            if index > last {
-                indexes.append(index)
-            }else if index < last {
-                throw DataFrameError.inconsistentIndexOrder
-            }
-        }else{
-            // nothing yet, insert date
-            indexes.append(index)
-        }
-    }
-
-    private mutating func updateField(field : F, element : T) throws {
-        values[field, default: []].append(element)
-
-        if values[field, default: []].count != indexes.count {
-            throw DataFrameError.inconsistentDataSize
-        }
-    }
+    /// Appends a single value to a field at the specified index
+    /// - Parameters:
+    ///   - field: The field to append to
+    ///   - element: The value to append
+    ///   - index: The index for the new value
+    /// - Throws: `DataFrameError.inconsistentIndexOrder` if the index would break the sorted order
+    /// - Throws: `DataFrameError.inconsistentDataSize` if the number of values becomes inconsistent
     public mutating func append(field : F, element : T, for index : I) throws {
         try self.indexCheckAndUpdate(index: index)
-        
         try self.updateField(field: field, element: element)
     }
     
+    /// Appends a single value to a field at the specified index without consistency checks
+    /// - Parameters:
+    ///   - field: The field to append to
+    ///   - element: The value to append
+    ///   - index: The index for the new value
+    /// - Note: This is faster than `append` but assumes the caller maintains consistency
     public mutating func unsafeFastAppend(field : F, element : T, for index : I) throws {
         if indexes.last == nil || indexes.last! != index {
             self.indexes.append(index)
@@ -176,31 +271,49 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         values[field, default: []].append(element)
     }
     
+    /// Appends multiple field-value pairs at the specified index
+    /// - Parameters:
+    ///   - fieldsValues: Dictionary of field-value pairs to append
+    ///   - index: The index for the new values
+    /// - Throws: `DataFrameError.inconsistentIndexOrder` if the index would break the sorted order
+    /// - Throws: `DataFrameError.inconsistentDataSize` if the number of values becomes inconsistent
     public mutating func append(fieldsValues : [F:T], for index : I) throws {
         try self.indexCheckAndUpdate(index: index)
-
         for (field,value) in fieldsValues {
             try self.updateField(field: field, element: value)
         }
     }
-
+    
+    /// Appends multiple values to multiple fields at the specified index without consistency checks
+    /// - Parameters:
+    ///   - fields: The fields to append to
+    ///   - elements: The values to append
+    ///   - index: The index for the new values
+    /// - Note: This is faster than `append` but assumes the caller maintains consistency
     public mutating func unsafeFastAppend(fields : [F], elements : [T], for index : I) {
         self.indexes.append(index)
         for (field,element) in zip(fields,elements) {
-            //self.values[field, default: []].append(element)
             self.values[field, default: []].append(element)
         }
     }
     
-    
+    /// Appends multiple values to multiple fields at the specified index
+    /// - Parameters:
+    ///   - fields: The fields to append to
+    ///   - elements: The values to append
+    ///   - index: The index for the new values
+    /// - Throws: `DataFrameError.inconsistentIndexOrder` if the index would break the sorted order
+    /// - Throws: `DataFrameError.inconsistentDataSize` if the number of values becomes inconsistent
     public mutating func append(fields : [F], elements: [T], for index : I) throws {
         try self.indexCheckAndUpdate(index: index)
-        
         for (field,element) in zip(fields,elements) {
             try self.updateField(field: field, element: element)
         }
     }
     
+    /// Returns a new DataFrame with all data before the specified index removed
+    /// - Parameter index: The index to drop before
+    /// - Returns: A new DataFrame with data from the specified index onwards, or nil if the index is not found
     public func dropFirst(index : I) -> DataFrame? {
         guard let found = self.indexes.firstIndex(of: index) else { return nil }
         
@@ -212,31 +325,32 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         return rv
     }
     
+    /// Returns a new DataFrame with data removed until a condition is met
+    /// - Parameters:
+    ///   - field: The field to check for the condition
+    ///   - minimumMatchCount: The minimum number of consecutive matches required
+    ///   - matching: The condition to check
+    /// - Returns: A new DataFrame with data from the first match onwards, or nil if no match is found
     public func dropFirst(field : F, minimumMatchCount : Int = 1, matching : ((T) -> Bool)) -> DataFrame? {
-        
-        guard let fieldValues = self.values[field]
-        else {
-            return nil
-        }
+        guard let fieldValues = self.values[field] else { return nil }
         
         var rv = DataFrame(fields: [F](self.values.keys))
-
         var found : Int = -1
         var matchCount : Int = 0
+        
         for (idx,value) in fieldValues.enumerated() {
             if matching(value) {
                 matchCount += 1
-            }else{
+            } else {
                 matchCount = 0
             }
-
+            
             if matchCount >= minimumMatchCount {
                 found = idx
                 break
             }
-
         }
-
+        
         if found != -1 {
             rv.indexes = [I](self.indexes.dropFirst(found))
             for (oneField,oneFieldValues) in self.values {
@@ -246,23 +360,24 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         return rv
     }
     
+    /// Returns a new DataFrame with data removed from the end until a condition is met
+    /// - Parameters:
+    ///   - field: The field to check for the condition
+    ///   - matching: The condition to check
+    /// - Returns: A new DataFrame with data up to the last match
     public func dropLast(field : F, matching : ((T) -> Bool)) -> DataFrame? {
-        
-        guard let fieldValues = self.values[field]
-        else {
-            return nil
-        }
+        guard let fieldValues = self.values[field] else { return nil }
         
         var rv = DataFrame(fields: Array(self.values.keys))
-
         var found : Int = 0
+        
         for (idx,value) in fieldValues.reversed().enumerated() {
             if matching(value) {
                 found = idx
                 break
             }
         }
-
+        
         rv.indexes = [I](self.indexes.dropLast(found))
         for (oneField,oneFieldValues) in self.values {
             rv.values[oneField] = [T](oneFieldValues.dropLast(found))
@@ -270,6 +385,11 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         return rv
     }
     
+    /// Adds a new column to the DataFrame
+    /// - Parameters:
+    ///   - field: The name of the new field
+    ///   - column: The column data to add
+    /// - Note: The column's indexes must match the DataFrame's indexes
     public mutating func add(field : F, column : Column) {
         if indexes == column.indexes {
             self.values[field] = column.values
@@ -278,18 +398,23 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
     
     //MARK: - Merge
     
+    /// Merges another DataFrame into this one
+    /// - Parameter other: The DataFrame to merge with
+    /// - Note: If indexes are not the same, the result will have the union of indexes
+    /// - Note: If indexes are the same, values from this DataFrame take precedence
     mutating public func merge(with other : DataFrame){
         let merged = self.merged(with: other)
-
         self.indexes = merged.indexes
         self.values = merged.values
     }
 
-    /// merge two dataframes
-    /// if the indexes are not the same, the result will be a dataframe with the union of the indexes
-    /// if the indexes are the same, the values will use the values from the first dataframe
+    /// Returns a new DataFrame that is the result of merging this DataFrame with another
+    /// - Parameter other: The DataFrame to merge with
+    /// - Returns: A new DataFrame containing the merged data
+    /// - Note: If indexes are not the same, the result will have the union of indexes
+    /// - Note: If indexes are the same, values from this DataFrame take precedence
     public func merged(with other : DataFrame) -> DataFrame{
-        // iterate over indexes of other
+        // handle simple cases
         guard self.indexes.first != nil else { return other }
         guard other.indexes.first != nil else { return self }
         
@@ -322,8 +447,7 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
                 thisBound.upper += 1
                 if thisBound.upper < self.indexes.count {
                     thisIndex.upper = self.indexes[thisBound.upper]
-                }// else leave it at the last value
-                
+                }
             }
             if thisBound.lower < thisBound.upper {
                 mergedIndex.append(contentsOf: self.indexes[thisBound.lower..<thisBound.upper])
@@ -339,7 +463,7 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
                 otherBound.upper += 1
                 if otherBound.upper < other.indexes.count {
                     otherIndex.upper = other.indexes[otherBound.upper]
-                }// else leave it at last value
+                }
             }
             if otherBound.lower < otherBound.upper {
                 mergedIndex.append(contentsOf: other.indexes[otherBound.lower..<otherBound.upper])
@@ -357,17 +481,16 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
     
     //MARK: - Transform
     
-    /// Returned array sliced from start to end.
+    /// Returns a new DataFrame containing only the data between the specified indexes
     /// - Parameters:
-    ///   - start: any index that are greater than or equal to start are included. if nil starts at the begining
-    ///   - end: any index that are strictly less than end are included, if nil ends at the end
-    /// - Returns: new indexvaluesbyfield
+    ///   - start: The start index (inclusive). If nil, starts from the beginning
+    ///   - end: The end index (exclusive). If nil, goes to the end
+    /// - Returns: A new DataFrame with the sliced data
     public func sliced(start : I? = nil, end : I? = nil) -> DataFrame {
-        guard self.indexes.count > 0 && ( start != nil || end != nil ) else { return self }
+        guard self.indexes.count > 0 && (start != nil || end != nil) else { return self }
         
         var indexStart : Int = 0
         var indexEnd : Int = self.indexes.count
-        
         
         if let start = start {
             indexStart = self.indexes.firstIndex { $0 >= start } ?? 0
@@ -385,12 +508,19 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         return rv
     }
     
-    
+    /// Returns a new DataFrame containing only the specified fields
+    /// - Parameter fields: The fields to include in the new DataFrame
+    /// - Returns: A new DataFrame with only the specified fields
+    /// - Throws: `DataFrameError.unknownField` if any of the specified fields don't exist
     public func dataFrame(for fields : [F]) throws -> DataFrame {
-        return try DataFrame(indexes: self.indexes, values: self.values, fields:    fields)
+        return try DataFrame(indexes: self.indexes, values: self.values, fields: fields)
     }
 
-    //MARK: - Extend
+    /// Creates a new column by transforming values from an existing column
+    /// - Parameters:
+    ///   - output: The name of the new field
+    ///   - input: The name of the input field
+    ///   - transform: The transformation function to apply
     mutating public func extend(output : F, input : F, transform : (T) -> T) {
         guard let inputValues = self.values[input] else { return }
         var outputValues : [T] = []
@@ -398,6 +528,11 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         self.values[output] = outputValues
     }
 
+    /// Creates a new column by transforming values from multiple existing columns
+    /// - Parameters:
+    ///   - output: The name of the new field
+    ///   - input: The names of the input fields
+    ///   - transform: The transformation function to apply
     mutating public func extendMultiple(output : F, input : [F], transform : ([T]) -> T) {
         var outputValues : [T] = []
         for index in self.indexes.indices {
@@ -414,6 +549,11 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
 
     //MARK: - Filter
 
+    /// Returns a new DataFrame containing only rows that satisfy the given condition
+    /// - Parameters:
+    ///   - input: The field to check for the condition
+    ///   - filter: The condition to check
+    /// - Returns: A new DataFrame with only the rows that satisfy the condition
     public func filter(input : F, filter : (T) -> Bool) -> DataFrame {
         guard let inputValues = self.values[input] else { return self }
         let indexes = inputValues.enumerated().filter { filter($0.element) }.map { $0.offset }
@@ -426,17 +566,30 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         }
         return rv
     }
-    //MARK: - access
+    
+    //MARK: - Access
+    
+    /// Checks if the DataFrame contains all the specified fields
+    /// - Parameter fields: The fields to check for
+    /// - Returns: true if all fields exist, false otherwise
     public func has(fields : [F]) -> Bool {
         let queryFieldSet = Set(fields)
         let thisFieldSet = Set(self.fields)
         return queryFieldSet.isSubset(of: thisFieldSet)
     }
     
+    /// Checks if the DataFrame contains the specified field
+    /// - Parameter field: The field to check for
+    /// - Returns: true if the field exists, false otherwise
     public func has(field : F) -> Bool {
         return self.values[field] != nil
     }
     
+    /// Returns the last point in the specified field that satisfies the given condition
+    /// - Parameters:
+    ///   - field: The field to search in
+    ///   - matching: Optional condition to check. If nil, returns the last point regardless of value
+    /// - Returns: The last matching point, or nil if no match is found
     public func last(field : F, matching : ((T) -> Bool)? = nil) -> Point?{
         guard let fieldValues = self.values[field],
               let lastDate = self.indexes.last,
@@ -452,11 +605,16 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
                 }
             }
             return nil
-        }else{
+        } else {
             return Point(index: lastDate, value: lastValue)
         }
     }
 
+    /// Returns the first point in the specified field that satisfies the given condition
+    /// - Parameters:
+    ///   - field: The field to search in
+    ///   - matching: Optional condition to check. If nil, returns the first point regardless of value
+    /// - Returns: The first matching point, or nil if no match is found
     public func first(field : F, matching : ((T) -> Bool)? = nil) -> Point?{
         guard let fieldValues = self.values[field],
               let firstDate = self.indexes.first,
@@ -472,11 +630,16 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
                 }
             }
             return nil
-        }else{
+        } else {
             return Point(index: firstDate, value: firstValue)
         }
     }
     
+    /// Returns the point at the specified index in the given field
+    /// - Parameters:
+    ///   - field: The field to get the point from
+    ///   - index: The index of the point
+    /// - Returns: The point at the specified index, or nil if the index is out of bounds
     public func point(for field : F, at index : Int) -> Point? {
         guard let fieldValues = self.values[field], index < self.indexes.count else { return nil }
         let value = fieldValues[index]
@@ -484,12 +647,20 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         return Point(index: date, value: value)
     }
 
+    /// Returns the value at the specified index in the given field
+    /// - Parameters:
+    ///   - field: The field to get the value from
+    ///   - index: The index of the value
+    /// - Returns: The value at the specified index, or nil if the index is out of bounds
     public func value(for field : F, at index : Int) -> T? {
         guard let fieldValues = self.values[field], index < self.indexes.count else { return nil }
         let value = fieldValues[index]
         return value
     }
     
+    /// Returns a row of data at the specified index
+    /// - Parameter index: The index of the row
+    /// - Returns: A dictionary mapping field names to values for the specified row
     public func row(at index : Int) -> Row {
         var rv : Row = [:]
         for (field,values) in self.values {
@@ -500,162 +671,44 @@ public struct DataFrame<I : Comparable & Hashable,T,F : Hashable> {
         return rv
     }
     
+    /// Returns the column for the specified field
+    /// - Parameter field: The field to get the column for
+    /// - Returns: The column containing the field's data, or nil if the field doesn't exist
     public func column(for field : F) -> Column? {
         guard let values = self.values[field] else { return nil }
         return Column(indexes: self.indexes, values: values)
     }
+    
+    /// Subscript access to columns by field name
+    /// - Parameter field: The field to get the column for
+    /// - Returns: The column containing the field's data, or nil if the field doesn't exist
     public subscript(_ field : F) -> Column? {
         return self.column(for: field)
     }
     
-    //MARK: - index
-    
-    public func reducedToCommonIndex(indexes other : [I]) -> DataFrame{
-        // handle simple cases
-        if self.indexes.count == 0 || self.indexes == other {
-            return self
-        }
-        
-        var newIndexes : [I] = []
-        var newValues : [F:[T]] = [:]
-        self.fields.forEach { newValues[$0] = [] }
+    //MARK: - Sequence Conformance
 
-        if other.count > 0 {
-            var otherIdx : Int = 0
-            var otherIndex : I = other.first!
-            
-            for (index,row) in self {
-                while (otherIndex < index && otherIdx < (other.count - 1)) {
-                    otherIdx += 1
-                    otherIndex = other[otherIdx]
-                }
-                if index == otherIndex {
-                    for (field,value) in row {
-                        newValues[field]?.append(value)
-                    }
-                    newIndexes.append(index)
-                }
+    public func makeIterator() -> AnyIterator<Element> {
+        var currentIndex = 0
+        let indexes = self.indexes
+        let fields = self.fields
+        let values = self.values
+        
+        return AnyIterator {
+            guard currentIndex < indexes.count else { return nil }
+            let index = indexes[currentIndex]
+            var row: [F:T] = [:]
+            for field in fields {
+                row[field] = values[field]?[currentIndex]
             }
+            currentIndex += 1
+            return (index, row)
         }
-        return DataFrame(indexes: newIndexes, values: newValues)
-    }
-    
-    public subscript(range: Range<Int>) -> DataFrame {
-        guard !range.isEmpty else { return DataFrame(fields: self.fields) }
-        guard range.lowerBound >= 0 && range.upperBound <= self.count else {
-            return DataFrame(fields: self.fields)
-        }
-        
-        var rv = DataFrame(fields: self.fields)
-        rv.indexes = [I](self.indexes[range])
-        for (field, values) in self.values {
-            rv.values[field] = [T](values[range])
-        }
-        return rv
-    }
-    
-    public subscript(columns: Set<F>) -> DataFrame {
-        let validColumns = columns.intersection(Set(self.fields))
-        guard !validColumns.isEmpty else { return DataFrame(fields: []) }
-        
-        var rv = DataFrame(fields: Array(validColumns))
-        rv.indexes = self.indexes
-        for field in validColumns {
-            rv.values[field] = self.values[field]
-        }
-        return rv
-    }
-}
-
-//MARK: - Floating point specialisation
-extension DataFrame where T : FloatingPoint {
-    public func dropna(fields : [F], includeAllFields : Bool = false) -> DataFrame {
-        let outputFields = includeAllFields ? self.fields : fields.compactMap( { self.values[$0] != nil ? $0 : nil } )
-        let checkFields = fields.compactMap { self.values[$0] != nil ? $0 : nil }
-        
-        guard outputFields.count > 0 else { return self }
-        
-        var rv = DataFrame(fields: outputFields)
-        rv.reserveCapacity(self.count)
-        
-        for (idx,index) in self.indexes.enumerated() {
-            var valid : Bool = true
-            for field in checkFields {
-                let val = self.values[field]![idx]
-                if !val.isFinite {
-                    valid = false
-                    break
-                }
-            }
-            if valid {
-                rv.unsafeFastAppend(fields: outputFields, elements: outputFields.map { self.values[$0]![idx] }, for: index)
-            }
-        }
-        return rv
-    }
-    
-
-}
-
-
-//MARK: - Equatable specialisation
-extension DataFrame where T : Equatable {
-    public func dataFrameForValueChange(fields : [F]) -> DataFrame {
-        let selectFields = fields.compactMap { self.values[$0] != nil ? $0 : nil }
-        
-        var rv = DataFrame(fields: selectFields)
-        
-        guard selectFields.count > 0 else { return rv }
-        
-        var last : [T] = []
-        
-        for (index,row) in self {
-            var add : Bool = (last.count != selectFields.count)
-
-            let vals = selectFields.map { row[$0]! }
-            if !add {
-                add = (vals != last)
-            }
-            last = vals
-            if add {
-                rv.unsafeFastAppend(fields: selectFields, elements: vals, for: index)
-            }
-        }
-        
-        return rv
-    }
-}
-
-
-//MARK: - Sequence/iterators
-extension DataFrame : Sequence {
-    ///MARK: Iterator
-    public struct DataFrameIterator : IteratorProtocol {
-        let dataFrame : DataFrame
-        var idx : Int
-        var row : Row = [:]
-        
-        public init(_ indexedValues : DataFrame) {
-            self.dataFrame = indexedValues
-            self.idx = 0
-        }
-        public mutating func next() -> (I,Row)? {
-            guard idx < dataFrame.indexes.count else { return nil }
-                
-            let index = dataFrame.indexes[idx]
-            for (field,serie) in dataFrame.values {
-                row[field] = serie[idx]
-            }
-            idx += 1
-            return (index,row)
-        }
-    }
-    public func makeIterator() -> DataFrameIterator {
-        return DataFrameIterator(self)
     }
 }
 
 extension DataFrame.Column : Sequence {
+    /// Iterator for Column that yields Point values
     public struct ColumnIterator : IteratorProtocol {
         let column : DataFrame.Column
         var idx : Int
@@ -664,6 +717,7 @@ extension DataFrame.Column : Sequence {
             self.column = column
             idx = 0
         }
+        
         public mutating func next() -> DataFrame.Point? {
             guard idx < column.indexes.count else { return nil }
             let rv = DataFrame.Point(index: column.indexes[idx], value: column.values[idx])
@@ -671,12 +725,15 @@ extension DataFrame.Column : Sequence {
             return rv
         }
     }
+    
+    /// Returns an iterator over the Column's Point values
     public func makeIterator() -> ColumnIterator {
         return ColumnIterator(self)
     }
 }
 
 extension DataFrame.Column where T : Hashable {
+    /// Returns an array of unique values in the column
     public var uniqueValues : [T] { return Array(Set(self.values)) }
 }
 
@@ -934,24 +991,138 @@ extension DataFrame {
     }
 }
 
-// Vectorized operations (for Double)
-extension DataFrame where T == Double {
-    public mutating func addColumn(_ newField: F, from field: F, operation: (Double) -> Double) {
-        guard let values = self.values[field] else { return }
-        self.values[newField] = values.map(operation)
-    }
-    
-    public mutating func addColumn(_ newField: F, from fields: [F], operation: ([Double]) -> Double) {
-        guard !fields.isEmpty else { return }
-        let fieldValues = fields.compactMap { self.values[$0] }
-        guard !fieldValues.isEmpty else { return }
-        
-        var newValues: [Double] = []
-        for i in 0..<self.count {
-            let values = fieldValues.map { $0[i] }
-            newValues.append(operation(values))
+//MARK: - Index Operations
+
+extension DataFrame {
+    /// Returns a new DataFrame containing only the indexes that are common with the provided indexes
+    /// - Parameter other: The indexes to reduce to
+    /// - Returns: A new DataFrame with only the common indexes
+    public func reducedToCommonIndex(indexes other: [I]) -> DataFrame {
+        // handle simple cases
+        if self.indexes.count == 0 || self.indexes == other {
+            return self
         }
-        self.values[newField] = newValues
+        
+        var newIndexes: [I] = []
+        var newValues: [F:[T]] = [:]
+        self.fields.forEach { newValues[$0] = [] }
+
+        if other.count > 0 {
+            var otherIdx: Int = 0
+            var otherIndex: I = other.first!
+            
+            for (index,row) in self {
+                while (otherIndex < index && otherIdx < (other.count - 1)) {
+                    otherIdx += 1
+                    otherIndex = other[otherIdx]
+                }
+                if index == otherIndex {
+                    for (field,value) in row {
+                        newValues[field]?.append(value)
+                    }
+                    newIndexes.append(index)
+                }
+            }
+        }
+        return DataFrame(indexes: newIndexes, values: newValues)
+    }
+
+    /// Subscript access to a range of rows
+    /// - Parameter range: The range of rows to access
+    /// - Returns: A new DataFrame containing only the specified rows
+    public subscript(range: Range<Int>) -> DataFrame {
+        guard !range.isEmpty else { return DataFrame(fields: self.fields) }
+        guard range.lowerBound >= 0 && range.upperBound <= self.count else {
+            return DataFrame(fields: self.fields)
+        }
+        
+        var rv = DataFrame(fields: self.fields)
+        rv.indexes = [I](self.indexes[range])
+        for (field, values) in self.values {
+            rv.values[field] = [T](values[range])
+        }
+        return rv
+    }
+
+    /// Subscript access to specific columns
+    /// - Parameter columns: The set of columns to access
+    /// - Returns: A new DataFrame containing only the specified columns
+    public subscript(columns: Set<F>) -> DataFrame {
+        let validColumns = columns.intersection(Set(self.fields))
+        guard !validColumns.isEmpty else { return DataFrame(fields: []) }
+        
+        var rv = DataFrame(fields: Array(validColumns))
+        rv.indexes = self.indexes
+        for field in validColumns {
+            rv.values[field] = self.values[field]
+        }
+        return rv
+    }
+}
+
+//MARK: - Floating Point Specialization
+
+extension DataFrame where T: FloatingPoint {
+    /// Returns a new DataFrame with NaN and infinite values removed from specified fields
+    /// - Parameters:
+    ///   - fields: The fields to check for NaN/infinite values
+    ///   - includeAllFields: If true, include all fields in the output DataFrame
+    /// - Returns: A new DataFrame with invalid values removed
+    public func dropna(fields: [F], includeAllFields: Bool = false) -> DataFrame {
+        let outputFields = includeAllFields ? self.fields : fields.compactMap({ self.values[$0] != nil ? $0 : nil })
+        let checkFields = fields.compactMap { self.values[$0] != nil ? $0 : nil }
+        
+        guard outputFields.count > 0 else { return self }
+        
+        var rv = DataFrame(fields: outputFields)
+        rv.reserveCapacity(self.count)
+        
+        for (idx,index) in self.indexes.enumerated() {
+            var valid: Bool = true
+            for field in checkFields {
+                let val = self.values[field]![idx]
+                if !val.isFinite {
+                    valid = false
+                    break
+                }
+            }
+            if valid {
+                rv.unsafeFastAppend(fields: outputFields, elements: outputFields.map { self.values[$0]![idx] }, for: index)
+            }
+        }
+        return rv
+    }
+}
+
+//MARK: - Equatable Specialization
+
+extension DataFrame where T: Equatable {
+    /// Returns a new DataFrame containing only rows where the specified fields change value
+    /// - Parameter fields: The fields to monitor for value changes
+    /// - Returns: A new DataFrame with only rows where values change
+    public func dataFrameForValueChange(fields: [F]) -> DataFrame {
+        let selectFields = fields.compactMap { self.values[$0] != nil ? $0 : nil }
+        
+        var rv = DataFrame(fields: selectFields)
+        
+        guard selectFields.count > 0 else { return rv }
+        
+        var last: [T] = []
+        
+        for (index,row) in self {
+            var add: Bool = (last.count != selectFields.count)
+
+            let vals = selectFields.map { row[$0]! }
+            if !add {
+                add = (vals != last)
+            }
+            last = vals
+            if add {
+                rv.unsafeFastAppend(fields: selectFields, elements: vals, for: index)
+            }
+        }
+        
+        return rv
     }
 }
 
