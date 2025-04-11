@@ -156,28 +156,39 @@ extension DataFrame where T == Double, I == Double {
         
         // Normalize delta by h
         vDSP_vdivD(h, 1, delta, 1, &delta, 1, vDSP_Length(n-1))
-        
+       
         // Decomposition loop
         for i in 1..<n-1 {
-            let sig = h[i-1] / (h[i-1] + h[i])
+            let hi1 = h[i-1]
+            let hi = h[i]
+            let denom = hi1 + hi
+            
+            guard abs(denom) > 1e-12 else {
+                // You could also log a warning here if needed
+                y2[i] = 0
+                u[i] = 0
+                continue
+            }
+
+            let sig = hi1 / denom
             let p = sig * y2[i-1] + 2.0
             y2[i] = (sig - 1.0) / p
-            
+
             let deltaDiff = delta[i] - delta[i-1]
-            u[i] = (6.0 * deltaDiff / (h[i-1] + h[i]) - sig * u[i-1]) / p
+            u[i] = (6.0 * deltaDiff / denom - sig * u[i-1]) / p
         }
         
         // Back substitution using Accelerate
-        var temp = [T](repeating: 0.0, count: n-2)
-        y2.withUnsafeBufferPointer { y2Ptr in
-            u.withUnsafeBufferPointer { uPtr in
-                vDSP_vmulD(y2Ptr.baseAddress! + 1, 1, uPtr.baseAddress! + 1, 1, &temp, 1, vDSP_Length(n-2))
-                vDSP_vaddD(temp, 1, uPtr.baseAddress! + 1, 1, &y2[1], 1, vDSP_Length(n-2))
-            }
+        for k in (1..<n-1).reversed() {
+            y2[k] = y2[k] * y2[k + 1] + u[k]
         }
     }
     
     private func evaluateCubicSpline(x: [T], y: [T], y2: [T], target: T) -> T {
+        // Special case: if target is at the end, return last value directly
+        if target >= x.last! {
+            return y.last!
+        }
         // Find the interval containing the target
         let k = x.lastIndex { $0 <= target } ?? 0
         let k1 = Swift.min(k + 1, x.count - 1)

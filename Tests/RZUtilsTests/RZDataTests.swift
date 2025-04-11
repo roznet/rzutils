@@ -897,4 +897,62 @@ final class RZDataTests: XCTestCase {
         }
     }
 
+    func testCubicSplineInterpolation() {
+        // Test 1: Perfect cubic function (x^3)
+        let x = stride(from: 0.0, through: 5.0, by: 0.5).map { $0 }
+        let y = x.map { $0 * $0 * $0 } // x^3
+        let df = DataFrame(indexes: x, values: ["y": y])
+        
+        // Interpolate at points between the original points
+        let xInterp = stride(from: 0.0, through: 5.0, by: 0.5).map { $0 }
+        let interpolated = df.interpolate(indexes: xInterp, method: .cubicSpline)
+        
+        // For a cubic function, cubic spline should be exact
+        for (i, xVal) in xInterp.enumerated() {
+            let expected = xVal * xVal * xVal
+            let actual = interpolated.values["y"]?[i] ?? 0.0
+            XCTAssertEqual(actual, expected, accuracy: 1e-10, "Cubic spline should be exact for cubic functions at x=\(xVal)")
+        }
+        
+        
+        // Test 3: Edge cases
+        let x3 = [0.0, 1.0, 2.0, 3.0]
+        let y3 = [1.0, 2.0, 1.0, 2.0]
+        let df3 = DataFrame(indexes: x3, values: ["y": y3])
+        
+        // Test interpolation at the boundaries
+        let xInterp3 = [-0.5, 0.0, 1.5, 3.0, 3.5]
+        let interpolated3 = df3.interpolate(indexes: xInterp3, method: .cubicSpline)
+        
+        // Check boundary values
+        if let y1 = interpolated3.values["y"]?[1] {
+            XCTAssertEqual(y1, 1.0, accuracy: 1e-10, "Should match exact point at x=0")
+        } else {
+            XCTFail("Failed to get interpolated value at x=0")
+        }
+        
+        if let y3 = interpolated3.values["y"]?[3] {
+            XCTAssertEqual(y3, 2.0, accuracy: 1e-10, "Should match exact point at x=3")
+        } else {
+            XCTFail("Failed to get interpolated value at x=3")
+        }
+        
+        // Test 4: Monotonicity preservation
+        let x4 = [0.0, 1.0, 2.0, 3.0]
+        let y4 = [1.0, 2.0, 3.0, 4.0] // Strictly increasing
+        let df4 = DataFrame(indexes: x4, values: ["y": y4])
+        
+        let xInterp4 = stride(from: 0.0, through: 3.0, by: 0.1).map { $0 }
+        let interpolated4 = df4.interpolate(indexes: xInterp4, method: .cubicSpline)
+        
+        // Check that interpolated values are also strictly increasing
+        for i in 1..<xInterp4.count {
+            guard let prev = interpolated4.values["y"]?[i-1],
+                  let curr = interpolated4.values["y"]?[i] else {
+                continue
+            }
+            XCTAssertGreaterThan(curr, prev, "Cubic spline should preserve monotonicity for strictly increasing data")
+        }
+    }
+
 }
