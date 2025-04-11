@@ -86,20 +86,25 @@ extension DataFrame where T == Double {
         return DataFrame<Double,Double,F>(indexes: quantiles, values: calculated)
     }
     
-    public func valueStats(from : I, to : I, units : [F:Dimension] = [:]) -> [F:ValueStats] {
+    public func valueStats(from : I? = nil, to : I? = nil, units : [F:Dimension] = [:], weightsField : F? = nil) -> [F:ValueStats] {
         var rv : [F:ValueStats] = [:]
         
         // Find the range of indexes to process
-        guard let startIdx = self.indexes.firstIndex(where: { $0 >= from }),
-              let endIdx = self.indexes.lastIndex(where: { $0 <= to }) else {
+        let startIdx : Int? = from != nil ? self.indexes.firstIndex(where: { $0 >= from! }) : 0
+        let endIdx : Int? = to != nil ? self.indexes.lastIndex(where: { $0 <= to! }) : self.indexes.count - 1
+
+        guard let startIdx = startIdx, let endIdx = endIdx, startIdx <= endIdx else {
             return rv
         }
         
         let range = startIdx...endIdx
         let count = range.count
         
-        // Pre-allocate arrays for Accelerate operations
+        // Get weights from specified field or use constant 1.0
         var weights = [Double](repeating: 1.0, count: count)
+        if let weightsField = weightsField, let weightValues = self.values[weightsField] {
+            weights = Array(weightValues[range])
+        }
         
         for field in self.fields {
             guard let values = self.values[field] else { continue }
@@ -127,6 +132,10 @@ extension DataFrame where T == Double {
             vDSP_minvD(fieldValues, 1, &min, vDSP_Length(count))
             vDSP_maxvD(fieldValues, 1, &max, vDSP_Length(count))
             
+            // Calculate total weight
+            var totalWeight: Double = 0.0
+            vDSP_sveD(weights, 1, &totalWeight, vDSP_Length(count))
+            
             // Create ValueStats with the calculated values
             let stats = ValueStats(
                 start: fieldValues.first!,
@@ -137,7 +146,7 @@ extension DataFrame where T == Double {
                 max: max,
                 min: min,
                 count: count,
-                weight: Double(count),
+                weight: totalWeight,
                 unit: units[field]
             )
             
