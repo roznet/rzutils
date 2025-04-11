@@ -8,9 +8,11 @@
 import Foundation
 
 public struct ValueStats {
-    private func stddev(count : Int, sum : Double, ssq : Double ) -> Double{
+    private func stddev(count : Int, sum : Double, ssq : Double ) -> Double?{
         let cnt = Double(count)
-        return sqrt((Double(cnt)*ssq-sum*sum)/(cnt*(cnt-1)))
+        guard cnt > 0 else { return nil }
+        guard cnt > 1 else { return 0.0 }
+        return sqrt((cnt*ssq-sum*sum)/(cnt*(cnt-1)))
     }
     
     public enum Metric : String{
@@ -39,7 +41,7 @@ public struct ValueStats {
 
     public var average : Double { return self.sum / Double(self.count) }
     public var weightedAverage : Double { return self.weightedSum / self.weight }
-    public var standardDeviation : Double { return stddev(count: self.count, sum: self.sum, ssq: self.sumSquare)}
+    public var standardDeviation : Double? { return stddev(count: self.count, sum: self.sum, ssq: self.sumSquare)}
     public var total : Double { return self.end - self.start}
     public var range : Double { return self.max - self.min }
     

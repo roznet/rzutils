@@ -191,7 +191,8 @@ extension DataFrame where T == Double {
     }
     
     public func variance(for field: F) -> Double? {
-        guard let values = self.values[field], !values.isEmpty else { return nil }
+        guard let values = self.values[field] else { return nil }
+        guard !values.isEmpty else { return nil }
         guard values.count > 1 else { return 0.0 } // Variance is 0 for single value
         
         // Check for NaN values
@@ -217,11 +218,15 @@ extension DataFrame where T == Double {
         var sumSquaredDiffs: Double = 0.0
         vDSP_sveD(squaredDiffs, 1, &sumSquaredDiffs, vDSP_Length(values.count))
         
-        // Divide by (n) for sample variance
+        // Divide by (n-1) for sample variance
         return sumSquaredDiffs / Double(values.count - 1)
     }
     
     public func standardDeviation(for field: F) -> Double? {
+        guard let values = self.values[field] else { return nil }
+        guard !values.isEmpty else { return nil }
+        guard values.count > 1 else { return 0.0 } // Standard deviation is 0 for single value
+        
         guard let variance = self.variance(for: field) else { return nil }
         return sqrt(variance)
     }

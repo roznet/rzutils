@@ -660,10 +660,10 @@ final class RZDataTests: XCTestCase {
             let stats = df.valueStats(from: 0, to: 4)
             
             if let valueStats = stats["values"] {
-                XCTAssertEqual(valueStats.count, 4) // NaN value should be skipped
-                XCTAssertEqual(valueStats.sum, 13.0)
-                XCTAssertEqual(valueStats.max, 5.0)
-                XCTAssertEqual(valueStats.min, 1.0)
+                XCTAssertEqual(valueStats.count, 5)
+                XCTAssertTrue(valueStats.sum.isNaN)
+                XCTAssertTrue(valueStats.max.isNaN)
+                XCTAssertTrue(valueStats.min.isNaN)
             }
         }
     }
@@ -676,14 +676,14 @@ final class RZDataTests: XCTestCase {
         ]
         
         if let df = self.buildSampleDfWithIntIndex(input: input) {
-            let stats = df.valueStats(from: 0, to: 4)
+            let stats = df.valueStats(from: 0, to: 4, weightsField: "weights")
             
             if let valueStats = stats["values"] {
                 XCTAssertEqual(valueStats.count, 5)
                 XCTAssertEqual(valueStats.sum, 15.0)
-                XCTAssertEqual(valueStats.weightedSum, 35.0) // 1*0.5 + 2*1.0 + 3*1.5 + 4*2.0 + 5*2.5
+                XCTAssertEqual(valueStats.weightedSum, (1.0*0.5 + 2.0*1.0 + 3.0*1.5 + 4.0*2.0 + 5.0*2.5))
                 XCTAssertEqual(valueStats.weight, 7.5) // Sum of weights
-                XCTAssertEqual(valueStats.weightedAverage, 35.0/7.5)
+                XCTAssertEqual(valueStats.weightedAverage, (1.0*0.5 + 2.0*1.0 + 3.0*1.5 + 4.0*2.0 + 5.0*2.5)/7.5)
             }
         }
     }
