@@ -56,8 +56,28 @@ public struct DataFrame<I: Comparable & Hashable, T, F: Hashable>: Sequence {
         /// The value of the data point
         public let value : T
     }
-    
-    /// Represents a column of data in the DataFrame
+    /// A Column represents a single column of data in a DataFrame, consisting of an ordered collection of values
+    /// and their corresponding indexes.
+    ///
+    /// A Column is a fundamental building block of a DataFrame, providing a way to access and manipulate
+    /// data in a single field. It maintains the relationship between values and their indexes, ensuring
+    /// that the data remains properly aligned.
+    ///
+    /// Example usage:
+    /// ```swift
+    /// // Create a column with temperature readings
+    /// let indexes = [1, 2, 3]
+    /// let values = [25.5, 26.0, 24.8]
+    /// let tempColumn = Column(indexes: indexes, values: values)
+    ///
+    /// // Access the first reading
+    /// if let firstReading = tempColumn.first {
+    ///     print("First temperature: \(firstReading.value) at index \(firstReading.index)")
+    /// }
+    /// ```
+    ///
+    /// - Note: The number of indexes must match the number of values in the column.
+    /// - Note: The indexes should be sorted in ascending order for optimal performance.
     public struct Column {
         /// The indexes corresponding to each value in the column
         public let indexes : [I]
@@ -180,10 +200,19 @@ public struct DataFrame<I: Comparable & Hashable, T, F: Hashable>: Sequence {
             }
         }
     }
-    
-    private init(indexes : [I], values: [F:[T]], fields: [F]) throws{
+    /// Creates a DataFrame from arrays of indexes and values
+    /// - Parameters:
+    ///   - indexes: The row indexes
+    ///   - values: A dictionary mapping field names to arrays of values
+    ///   - fields: Optional field names to include in the DataFrame. If nil, all fields from values will be used
+    /// - Throws: `DataFrameError.unknownField` if any of the specified fields don't exist in the values dictionary
+    /// - Note: The number of values in each field's array must match the number of indexes
+    /// - Note: The indexes must be in ascending order
+    private init(indexes : [I], values: [F:[T]], fields: [F]? = nil) throws{
         var v : [F:[T]] = [:]
-        for field in fields {
+        let fieldsToUse = fields ?? values.keys
+        
+        for field in fieldsToUse {
             if let c = values[field] {
                 v[field] = c
             }else{
