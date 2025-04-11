@@ -8,11 +8,30 @@
 import Foundation
 import Accelerate
 
+public enum InterpolationMethod {
+    /// Linear interpolation between points
+    case linear
+    /// Cubic spline interpolation, providing smooth curves through all points
+    case cubicSpline
+}
 extension DataFrame where T == Double, I == Double {
-    /// Interpolates values at the given indexes using linear interpolation
-    /// - Parameter indexes: The target indexes to interpolate values at
+    /// Defines the available interpolation methods
+    
+    /// Interpolates values at the given indexes using the specified interpolation method
+    /// - Parameters:
+    ///   - indexes: The target indexes to interpolate values at
+    ///   - method: The interpolation method to use (default: .linear)
     /// - Returns: A new DataFrame with interpolated values
-    public func interpolate(indexes: [I]) -> DataFrame {
+    public func interpolate(indexes: [I], method: InterpolationMethod = .linear) -> DataFrame {
+        switch method {
+        case .linear:
+            return linearInterpolate(indexes: indexes)
+        case .cubicSpline:
+            return cubicSplineInterpolate(indexes: indexes)
+        }
+    }
+    
+    private func linearInterpolate(indexes: [I]) -> DataFrame {
         guard !self.indexes.isEmpty else { return DataFrame(fields: self.fields) }
         
         var interpolatedValues: [F: [T]] = [:]
@@ -23,140 +42,223 @@ extension DataFrame where T == Double, I == Double {
             interpolatedValues[field] = [T](repeating: 0.0, count: indexes.count)
         }
         
-        // For each target index
+        // Pre-compute the intervals for each target index
+        var lowerIndices = [Int](repeating: 0, count: indexes.count)
+        var upperIndices = [Int](repeating: 0, count: indexes.count)
+        var tValues = [T](repeating: 0.0, count: indexes.count)
+        
+        // Find surrounding points and compute interpolation coefficients
         for (i, targetIndex) in indexes.enumerated() {
-            // Find the surrounding points for interpolation
             let lowerIndex = self.indexes.lastIndex { $0 <= targetIndex } ?? 0
             let upperIndex = self.indexes.firstIndex { $0 >= targetIndex } ?? (self.indexes.count - 1)
             
-            // Handle edge cases
+            lowerIndices[i] = lowerIndex
+            upperIndices[i] = upperIndex
+            
             if lowerIndex == upperIndex {
-                // Exact match or edge case
-                for field in fields {
-                    interpolatedValues[field]?[i] = self.values[field]?[lowerIndex] ?? 0.0
-                }
+                tValues[i] = 0.0 // Will be handled separately
             } else {
-                // Linear interpolation
                 let x0 = self.indexes[lowerIndex]
                 let x1 = self.indexes[upperIndex]
-                let t = (targetIndex - x0) / (x1 - x0)
-                
-                for field in fields {
-                    if let values = self.values[field],
-                       lowerIndex < values.count && upperIndex < values.count {
-                        let y0 = values[lowerIndex]
-                        let y1 = values[upperIndex]
-                        interpolatedValues[field]?[i] = y0 + t * (y1 - y0)
-                    }
-                }
+                tValues[i] = (targetIndex - x0) / (x1 - x0)
+            }
+        }
+        
+        // For each field, perform vectorized interpolation
+        for field in fields {
+            guard let values = self.values[field] else { continue }
+            
+            // Pre-allocate arrays for vectorized operations
+            var y0 = [T](repeating: 0.0, count: indexes.count)
+            var y1 = [T](repeating: 0.0, count: indexes.count)
+            var result = [T](repeating: 0.0, count: indexes.count)
+            
+            // Extract y0 and y1 values
+            for i in 0..<indexes.count {
+                y0[i] = values[lowerIndices[i]]
+                y1[i] = values[upperIndices[i]]
+            }
+            
+            // Compute y1 - y0
+            var yDiff = [T](repeating: 0.0, count: indexes.count)
+            vDSP_vsubD(y0, 1, y1, 1, &yDiff, 1, vDSP_Length(indexes.count))
+            
+            // Compute t * (y1 - y0)
+            var tTimesDiff = [T](repeating: 0.0, count: indexes.count)
+            vDSP_vmulD(tValues, 1, yDiff, 1, &tTimesDiff, 1, vDSP_Length(indexes.count))
+            
+            // Compute y0 + t * (y1 - y0)
+            vDSP_vaddD(y0, 1, tTimesDiff, 1, &result, 1, vDSP_Length(indexes.count))
+            
+            // Handle exact matches (where t = 0)
+            for i in 0..<indexes.count where lowerIndices[i] == upperIndices[i] {
+                result[i] = values[lowerIndices[i]]
+            }
+            
+            interpolatedValues[field] = result
+        }
+        
+        return DataFrame(indexes: indexes, values: interpolatedValues)
+    }
+    
+    private func cubicSplineInterpolate(indexes: [I]) -> DataFrame {
+        guard !self.indexes.isEmpty else { return DataFrame(fields: self.fields) }
+        
+        var interpolatedValues: [F: [T]] = [:]
+        let fields = self.fields
+        
+        // Pre-allocate arrays for each field
+        for field in fields {
+            interpolatedValues[field] = [T](repeating: 0.0, count: indexes.count)
+        }
+        
+        // For each field, compute cubic spline coefficients and interpolate
+        for field in fields {
+            guard let values = self.values[field] else { continue }
+            
+            // Compute second derivatives using Accelerate
+            var secondDerivatives = [T](repeating: 0.0, count: self.indexes.count)
+            computeCubicSplineCoefficients(x: self.indexes, y: values, y2: &secondDerivatives)
+            
+            // Interpolate using the coefficients
+            for (i, targetIndex) in indexes.enumerated() {
+                interpolatedValues[field]?[i] = evaluateCubicSpline(
+                    x: self.indexes,
+                    y: values,
+                    y2: secondDerivatives,
+                    target: targetIndex
+                )
             }
         }
         
         return DataFrame(indexes: indexes, values: interpolatedValues)
     }
+    
+    private func computeCubicSplineCoefficients(x: [T], y: [T], y2: inout [T]) {
+        let n = x.count
+        var u = [T](repeating: 0.0, count: n-1)
+        
+        // Natural spline conditions
+        y2[0] = 0
+        y2[n-1] = 0
+        
+        // Compute differences using Accelerate
+        var h = [T](repeating: 0.0, count: n-1)
+        var delta = [T](repeating: 0.0, count: n-1)
+        
+        // Compute h and delta using vDSP
+        x.withUnsafeBufferPointer { xPtr in
+            y.withUnsafeBufferPointer { yPtr in
+                vDSP_vsubD(xPtr.baseAddress!, 1, xPtr.baseAddress! + 1, 1, &h, 1, vDSP_Length(n-1))
+                vDSP_vsubD(yPtr.baseAddress!, 1, yPtr.baseAddress! + 1, 1, &delta, 1, vDSP_Length(n-1))
+            }
+        }
+        
+        // Normalize delta by h
+        vDSP_vdivD(h, 1, delta, 1, &delta, 1, vDSP_Length(n-1))
+        
+        // Decomposition loop
+        for i in 1..<n-1 {
+            let sig = h[i-1] / (h[i-1] + h[i])
+            let p = sig * y2[i-1] + 2.0
+            y2[i] = (sig - 1.0) / p
+            
+            let deltaDiff = delta[i] - delta[i-1]
+            u[i] = (6.0 * deltaDiff / (h[i-1] + h[i]) - sig * u[i-1]) / p
+        }
+        
+        // Back substitution using Accelerate
+        var temp = [T](repeating: 0.0, count: n-2)
+        y2.withUnsafeBufferPointer { y2Ptr in
+            u.withUnsafeBufferPointer { uPtr in
+                vDSP_vmulD(y2Ptr.baseAddress! + 1, 1, uPtr.baseAddress! + 1, 1, &temp, 1, vDSP_Length(n-2))
+                vDSP_vaddD(temp, 1, uPtr.baseAddress! + 1, 1, &y2[1], 1, vDSP_Length(n-2))
+            }
+        }
+    }
+    
+    private func evaluateCubicSpline(x: [T], y: [T], y2: [T], target: T) -> T {
+        // Find the interval containing the target
+        let k = x.lastIndex { $0 <= target } ?? 0
+        let k1 = Swift.min(k + 1, x.count - 1)
+        
+        let h = x[k1] - x[k]
+        let a = (x[k1] - target) / h
+        let b = (target - x[k]) / h
+        
+        // Evaluate cubic spline using Accelerate
+        var result: T = 0.0
+        var terms = [T](repeating: 0.0, count: 4)
+        
+        // Compute terms with simplified expressions
+        let a3 = a * a * a
+        let b3 = b * b * b
+        let h2 = h * h
+        
+        terms[0] = a * y[k]
+        terms[1] = b * y[k1]
+        terms[2] = (a3 - a) * y2[k] * h2 / 6.0
+        terms[3] = (b3 - b) * y2[k1] * h2 / 6.0
+        
+        // Sum terms using Accelerate
+        vDSP_sveD(terms, 1, &result, vDSP_Length(4))
+        
+        return result
+    }
 }
 
 extension DataFrame where T == Double, I == Date {
-    /// Interpolates values at the given dates using time-based linear interpolation
-    /// - Parameter dates: The target dates to interpolate values at
+    /// Interpolates values at the given dates using time-based interpolation
+    /// - Parameters:
+    ///   - dates: The target dates to interpolate values at
+    ///   - method: The interpolation method to use (default: .linear)
     /// - Returns: A new DataFrame with interpolated values
-    public func interpolate(dates: [I]) -> DataFrame {
-        guard !self.indexes.isEmpty else { return DataFrame(fields: self.fields) }
-        
-        var interpolatedValues: [F: [T]] = [:]
-        let fields = self.fields
-        
-        // Pre-allocate arrays for each field
-        for field in fields {
-            interpolatedValues[field] = [T](repeating: 0.0, count: dates.count)
-        }
-        
+    public func interpolate(dates: [I], method: InterpolationMethod = .linear) -> DataFrame {
         // Convert dates to time intervals for easier calculation
         let targetIntervals = dates.map { $0.timeIntervalSince1970 }
         let sourceIntervals = self.indexes.map { $0.timeIntervalSince1970 }
         
-        // For each target date
-        for (i, targetInterval) in targetIntervals.enumerated() {
-            // Find the surrounding points for interpolation
-            let lowerIndex = sourceIntervals.lastIndex { $0 <= targetInterval } ?? 0
-            let upperIndex = sourceIntervals.firstIndex { $0 >= targetInterval } ?? (sourceIntervals.count - 1)
-            
-            // Handle edge cases
-            if lowerIndex == upperIndex {
-                // Exact match or edge case
-                for field in fields {
-                    interpolatedValues[field]?[i] = self.values[field]?[lowerIndex] ?? 0.0
-                }
-            } else {
-                // Linear interpolation
-                let x0 = sourceIntervals[lowerIndex]
-                let x1 = sourceIntervals[upperIndex]
-                let t = (targetInterval - x0) / (x1 - x0)
-                
-                for field in fields {
-                    if let values = self.values[field],
-                       lowerIndex < values.count && upperIndex < values.count {
-                        let y0 = values[lowerIndex]
-                        let y1 = values[upperIndex]
-                        interpolatedValues[field]?[i] = y0 + t * (y1 - y0)
-                    }
-                }
-            }
-        }
+        // Create temporary DataFrame with Double indexes
+        let tempDf = DataFrame<Double, Double, F>(
+            indexes: sourceIntervals,
+            values: self.values
+        )
         
-        return DataFrame(indexes: dates, values: interpolatedValues)
+        // Interpolate using the Double version
+        let interpolated = tempDf.interpolate(indexes: targetIntervals, method: method)
+        
+        // Convert back to Date indexes
+        return DataFrame<Date, Double, F>(
+            indexes: dates,
+            values: interpolated.values
+        )
     }
 }
 
 extension DataFrame where T == Double {
-    /// Interpolates values at the given x values using linear interpolation, using a specific field as the independent variable
+    /// Interpolates values at the given x values using interpolation, using a specific field as the independent variable
     /// - Parameters:
     ///   - xField: The field to use as the independent variable
     ///   - xValues: The target x values to interpolate at
+    ///   - method: The interpolation method to use (default: .linear)
     /// - Returns: A new DataFrame with interpolated values
-    public func interpolate(xField: F, xValues: [T]) -> DataFrame {
+    public func interpolate(xField: F, xValues: [T], method: InterpolationMethod = .linear) -> DataFrame {
         guard !self.indexes.isEmpty else { return DataFrame(fields: self.fields) }
         guard let xFieldValues = self.values[xField] else { return DataFrame(fields: self.fields) }
         
-        var interpolatedValues: [F: [T]] = [:]
-        let fields = self.fields
+        // Create temporary DataFrame with xField values as indexes
+        let tempDf = DataFrame<Double, Double, F>(
+            indexes: xFieldValues,
+            values: self.values
+        )
         
-        // Pre-allocate arrays for each field
-        for field in fields {
-            interpolatedValues[field] = [T](repeating: 0.0, count: xValues.count)
-        }
+        // Interpolate using the standard method
+        let interpolated = tempDf.interpolate(indexes: xValues, method: method)
         
-        // For each target x value
-        for (i, targetX) in xValues.enumerated() {
-            // Find the surrounding points for interpolation
-            let lowerIndex = xFieldValues.lastIndex { $0 <= targetX } ?? 0
-            let upperIndex = xFieldValues.firstIndex { $0 >= targetX } ?? (xFieldValues.count - 1)
-            
-            // Handle edge cases
-            if lowerIndex == upperIndex {
-                // Exact match or edge case
-                for field in fields {
-                    if let values = self.values[field], lowerIndex < values.count {
-                        interpolatedValues[field]?[i] = values[lowerIndex]
-                    }
-                }
-            } else {
-                // Linear interpolation
-                let x0 = xFieldValues[lowerIndex]
-                let x1 = xFieldValues[upperIndex]
-                let t = (targetX - x0) / (x1 - x0)
-                
-                for field in fields {
-                    if let values = self.values[field],
-                       lowerIndex < values.count && upperIndex < values.count {
-                        let y0 = values[lowerIndex]
-                        let y1 = values[upperIndex]
-                        interpolatedValues[field]?[i] = y0 + t * (y1 - y0)
-                    }
-                }
-            }
-        }
-        
-        return DataFrame(indexes: self.indexes, values: interpolatedValues)
+        // Create result DataFrame with original index type
+        return DataFrame<I, T, F>(
+            indexes: self.indexes,
+            values: interpolated.values
+        )
     }
 }
