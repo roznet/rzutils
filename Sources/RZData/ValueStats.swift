@@ -57,6 +57,20 @@ public struct ValueStats {
         self.sumSquare = value
     }
     
+    public init(start: Double, end: Double, sum: Double, sumSquare: Double, weightedSum: Double, 
+                max: Double, min: Double, count: Int, weight: Double, unit: Dimension? = nil) {
+        self.start = start
+        self.end = end
+        self.sum = sum
+        self.sumSquare = sumSquare
+        self.weightedSum = weightedSum
+        self.max = max
+        self.min = min
+        self.count = count
+        self.weight = weight
+        self.unit = unit
+    }
+    
     public mutating func update(double value : Double, weight : Double = 1) {
         // if we got initial value correct
         if self.start.isFinite {

@@ -88,24 +88,62 @@ extension DataFrame where T == Double {
     
     public func valueStats(from : I, to : I, units : [F:Dimension] = [:]) -> [F:ValueStats] {
         var rv : [F:ValueStats] = [:]
-        var started : Bool = false
-        for (idx,runningdate) in self.indexes.enumerated(){
-            if runningdate > to {
-                break
-            }
-            if runningdate >= from {
-                if started {
-                    for (field,values) in self.values {
-                        rv[field]?.update(double: values[idx])
-                    }
-                }else{
-                    for (field,values) in self.values {
-                        rv[field] = ValueStats(value: values[idx], weight: 1.0, unit: units[field])
-                    }
-                    started = true
-                }
-            }
+        
+        // Find the range of indexes to process
+        guard let startIdx = self.indexes.firstIndex(where: { $0 >= from }),
+              let endIdx = self.indexes.lastIndex(where: { $0 <= to }) else {
+            return rv
         }
+        
+        let range = startIdx...endIdx
+        let count = range.count
+        
+        // Pre-allocate arrays for Accelerate operations
+        var weights = [Double](repeating: 1.0, count: count)
+        
+        for field in self.fields {
+            guard let values = self.values[field] else { continue }
+            
+            // Extract the range of values we need
+            let fieldValues = Array(values[range])
+            
+            // Calculate basic statistics using Accelerate
+            var sum: Double = 0.0
+            var sumSquares: Double = 0.0
+            var weightedSum: Double = 0.0
+            var min: Double = 0.0
+            var max: Double = 0.0
+            
+            // Calculate sum and weighted sum
+            vDSP_sveD(fieldValues, 1, &sum, vDSP_Length(count))
+            vDSP_dotprD(fieldValues, 1, weights, 1, &weightedSum, vDSP_Length(count))
+            
+            // Calculate sum of squares
+            var squared = [Double](repeating: 0.0, count: count)
+            vDSP_vsqD(fieldValues, 1, &squared, 1, vDSP_Length(count))
+            vDSP_sveD(squared, 1, &sumSquares, vDSP_Length(count))
+            
+            // Calculate min/max
+            vDSP_minvD(fieldValues, 1, &min, vDSP_Length(count))
+            vDSP_maxvD(fieldValues, 1, &max, vDSP_Length(count))
+            
+            // Create ValueStats with the calculated values
+            let stats = ValueStats(
+                start: fieldValues.first!,
+                end: fieldValues.last!,
+                sum: sum,
+                sumSquare: sumSquares,
+                weightedSum: weightedSum,
+                max: max,
+                min: min,
+                count: count,
+                weight: Double(count),
+                unit: units[field]
+            )
+            
+            rv[field] = stats
+        }
+        
         return rv
     }
     

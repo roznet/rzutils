@@ -569,4 +569,157 @@ final class RZDataTests: XCTestCase {
         XCTAssertNil(df["invalid"])
     }
 
+    // MARK: - ValueStats Tests
+    
+    func testValueStats() {
+        // Test basic value stats calculation
+        let input: [String: [Double]] = [
+            "values": [1.0, 2.0, 3.0, 4.0, 5.0]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
+            let stats = df.valueStats(from: 0, to: 4)
+            
+            if let valueStats = stats["values"] {
+                XCTAssertEqual(valueStats.count, 5)
+                XCTAssertEqual(valueStats.sum, 15.0)
+                XCTAssertEqual(valueStats.max, 5.0)
+                XCTAssertEqual(valueStats.min, 1.0)
+                XCTAssertEqual(valueStats.start, 1.0)
+                XCTAssertEqual(valueStats.end, 5.0)
+                XCTAssertEqual(valueStats.average, 3.0)
+                XCTAssertEqual(valueStats.standardDeviation, sqrt(2.5))
+            } else {
+                XCTFail("ValueStats for 'values' not found")
+            }
+        }
+    }
+    
+    func testValueStatsWithUnits() {
+        // Test value stats with units
+        let input: [String: [Double]] = [
+            "temperature": [20.0, 25.0, 30.0, 35.0, 40.0]
+        ]
+        
+        let units: [String: Dimension] = [
+            "temperature": UnitTemperature.celsius
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
+            let stats = df.valueStats(from: 0, to: 4, units: units)
+            
+            if let tempStats = stats["temperature"] {
+                XCTAssertEqual(tempStats.count, 5)
+                XCTAssertEqual(tempStats.sum, 150.0)
+                XCTAssertEqual(tempStats.max, 40.0)
+                XCTAssertEqual(tempStats.min, 20.0)
+                XCTAssertEqual(tempStats.average, 30.0)
+                XCTAssertNotNil(tempStats.sumMeasurement)
+                XCTAssertEqual(tempStats.sumMeasurement?.unit, UnitTemperature.celsius)
+            }
+        }
+    }
+    
+    func testValueStatsEdgeCases() {
+        // Test empty range
+        let input: [String: [Double]] = [
+            "values": [1.0, 2.0, 3.0, 4.0, 5.0]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
+            let emptyStats = df.valueStats(from: 10, to: 20)
+            XCTAssertTrue(emptyStats.isEmpty)
+        }
+        
+        // Test single value
+        let singleInput: [String: [Double]] = [
+            "value": [42.0]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: singleInput) {
+            let stats = df.valueStats(from: 0, to: 0)
+            
+            if let valueStats = stats["value"] {
+                XCTAssertEqual(valueStats.count, 1)
+                XCTAssertEqual(valueStats.sum, 42.0)
+                XCTAssertEqual(valueStats.max, 42.0)
+                XCTAssertEqual(valueStats.min, 42.0)
+                XCTAssertEqual(valueStats.start, 42.0)
+                XCTAssertEqual(valueStats.end, 42.0)
+                XCTAssertEqual(valueStats.average, 42.0)
+                XCTAssertEqual(valueStats.standardDeviation, 0.0)
+            }
+        }
+        
+        // Test NaN values
+        let nanInput: [String: [Double]] = [
+            "values": [1.0, Double.nan, 3.0, 4.0, 5.0]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: nanInput) {
+            let stats = df.valueStats(from: 0, to: 4)
+            
+            if let valueStats = stats["values"] {
+                XCTAssertEqual(valueStats.count, 4) // NaN value should be skipped
+                XCTAssertEqual(valueStats.sum, 13.0)
+                XCTAssertEqual(valueStats.max, 5.0)
+                XCTAssertEqual(valueStats.min, 1.0)
+            }
+        }
+    }
+    
+    func testValueStatsWithWeights() {
+        // Test value stats with weighted values
+        let input: [String: [Double]] = [
+            "values": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "weights": [0.5, 1.0, 1.5, 2.0, 2.5]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
+            let stats = df.valueStats(from: 0, to: 4)
+            
+            if let valueStats = stats["values"] {
+                XCTAssertEqual(valueStats.count, 5)
+                XCTAssertEqual(valueStats.sum, 15.0)
+                XCTAssertEqual(valueStats.weightedSum, 35.0) // 1*0.5 + 2*1.0 + 3*1.5 + 4*2.0 + 5*2.5
+                XCTAssertEqual(valueStats.weight, 7.5) // Sum of weights
+                XCTAssertEqual(valueStats.weightedAverage, 35.0/7.5)
+            }
+        }
+    }
+    
+    func testValueStatsWithMultipleFields() {
+        // Test value stats with multiple fields
+        let input: [String: [Double]] = [
+            "x": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "y": [10.0, 20.0, 30.0, 40.0, 50.0],
+            "z": [100.0, 200.0, 300.0, 400.0, 500.0]
+        ]
+        
+        if let df = self.buildSampleDfWithIntIndex(input: input) {
+            let stats = df.valueStats(from: 0, to: 4)
+            
+            // Test x field
+            if let xStats = stats["x"] {
+                XCTAssertEqual(xStats.count, 5)
+                XCTAssertEqual(xStats.sum, 15.0)
+                XCTAssertEqual(xStats.average, 3.0)
+            }
+            
+            // Test y field
+            if let yStats = stats["y"] {
+                XCTAssertEqual(yStats.count, 5)
+                XCTAssertEqual(yStats.sum, 150.0)
+                XCTAssertEqual(yStats.average, 30.0)
+            }
+            
+            // Test z field
+            if let zStats = stats["z"] {
+                XCTAssertEqual(zStats.count, 5)
+                XCTAssertEqual(zStats.sum, 1500.0)
+                XCTAssertEqual(zStats.average, 300.0)
+            }
+        }
+    }
+
 }

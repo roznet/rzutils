@@ -210,7 +210,7 @@ public struct DataFrame<I: Comparable & Hashable, T, F: Hashable>: Sequence {
     /// - Note: The indexes must be in ascending order
     private init(indexes : [I], values: [F:[T]], fields: [F]? = nil) throws{
         var v : [F:[T]] = [:]
-        let fieldsToUse = fields ?? values.keys
+        let fieldsToUse : [F] = fields ?? Array(values.keys)
         
         for field in fieldsToUse {
             if let c = values[field] {
