@@ -241,6 +241,19 @@ public struct DataFrame<I: Comparable & Hashable, T, F: Hashable>: Sequence {
         }
     }
     
+    public func indexOrderIsConsistent() -> Bool {
+        var prev : I?
+        for index in indexes {
+            if let p = prev {
+                if index < p {
+                    return false
+                }
+            }
+            prev = index
+        }
+        return true
+    }
+    
     /// Updates a field with a new value and checks for consistency
     /// - Parameters:
     ///   - field: The field to update

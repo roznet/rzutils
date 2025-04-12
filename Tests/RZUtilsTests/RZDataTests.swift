@@ -769,6 +769,41 @@ final class RZDataTests: XCTestCase {
                 XCTAssertEqual(xStats.sum, 3.0+4.0+5.0) // 1 + 2 + 3
                 XCTAssertEqual(xStats.average, (3.0+4.0+5.0)/3.0)
             }
+            
+            // Test with indexes before start value
+            let beforeStartExtracted = try df.extractValueStats(
+                indexes: [-2, -1, 2, 3],
+                start: 0,
+                end: 5
+            )
+            // Should only include indexes >= start (0)
+            XCTAssertEqual(beforeStartExtracted.indexes, [0, 2, 3])
+            
+            // Check stats for first interval (0-2)
+            if let xStats = beforeStartExtracted.values["x"]?[0] {
+                XCTAssertEqual(xStats.count, 2)
+                XCTAssertEqual(xStats.sum, 1.0 + 2.0)
+                XCTAssertEqual(xStats.average, (1.0 + 2.0)/2.0)
+                XCTAssertEqual(xStats.start, 1.0)
+                XCTAssertEqual(xStats.end, 2.0)
+            }
+            
+            // Check stats for second interval (2-3)
+            if let yStats = beforeStartExtracted.values["y"]?[1] {
+                XCTAssertEqual(yStats.count, 1)
+                XCTAssertEqual(yStats.sum, 30.0)
+                XCTAssertEqual(yStats.average, 30.0)
+                XCTAssertEqual(yStats.start, 30.0)
+                XCTAssertEqual(yStats.end, 30.0)
+            }
+            
+            // Test with all indexes before start
+            let allBeforeStartExtracted = try df.extractValueStats(
+                indexes: [-2, -1],
+                start: 0,
+                end: 5
+            )
+            XCTAssertEqual(allBeforeStartExtracted.count, 0, "Should return empty DataFrame when all indexes are before start")
         }
     }
     

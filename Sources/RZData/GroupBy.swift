@@ -29,9 +29,19 @@ extension DataFrame  {
             }
             self.start = start
             self.end = end
-            self.currentExtractIndex = start
             
-            self.remainingIndexes = extractIndexes
+            // Filter out indexes before start if start is specified
+            if let start = start {
+                self.remainingIndexes = extractIndexes.filter { $0 >= start }
+                // If all indexes are before start, return nil
+                if self.remainingIndexes.isEmpty {
+                    return nil
+                }
+            } else {
+                self.remainingIndexes = extractIndexes
+            }
+            
+            self.currentExtractIndex = start
         }
         
         mutating func next() {
