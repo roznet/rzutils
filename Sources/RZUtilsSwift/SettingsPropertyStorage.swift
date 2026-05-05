@@ -25,22 +25,26 @@ public struct SecureKeyChainItem {
         }
         set {
             if let val = newValue {
+                // Try update first so an existing item is replaced in place.
+                // SecItemAdd on a duplicate returns errSecDuplicateItem, which
+                // doesn't surface as itemNotFound — landing in a bare catch and
+                // silently dropping the write. Update→add avoids that path.
                 do {
-                    try self.addItem(item: val)
+                    try self.updateItem(item: val)
                 }catch (SecureKeyChainItemError.itemNotFound){
                     do {
-                        try self.updateItem(item: val)
+                        try self.addItem(item: val)
                     }catch{
-                        
+
                     }
                 }catch{
-                    
+
                 }
             }else{
                 do {
                     try self.deleteItem()
                 }catch{
-                    
+
                 }
             }
         }
