@@ -17,7 +17,13 @@ public struct SecureKeyChainItem {
    
     private let service : String // service identifier
     private let accessGroup: String? //
-    
+    /// Optional `kSecAttrAccessible` value (e.g.
+    /// `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`). When set, it is applied
+    /// on add/update so the item is bound to this device and excluded from
+    /// backups/iCloud-Keychain migration. `nil` preserves the prior default
+    /// behavior (system default accessibility) for existing callers.
+    private let accessible: CFString?
+
     public let key : String // Will use account for the key
     public var value : Data? {
         get {
@@ -50,10 +56,11 @@ public struct SecureKeyChainItem {
         }
     }
 
-    public init(key : String, service : String, accessGroup : String? = nil){
+    public init(key : String, service : String, accessGroup : String? = nil, accessible : CFString? = nil){
         self.service = service
         self.key = key
         self.accessGroup = accessGroup
+        self.accessible = accessible
     }
     
     var query : [String: Any] {
@@ -89,6 +96,9 @@ public struct SecureKeyChainItem {
     func addItem(item : Data) throws {
         var query = self.query
         query[ kSecValueData as String] = item
+        if let accessible = self.accessible {
+            query[ kSecAttrAccessible as String] = accessible
+        }
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else { throw SecureKeyChainItemError.unhandledError(status: status)}
     }
@@ -104,7 +114,10 @@ public struct SecureKeyChainItem {
         var attributes : [String:Any] = [:]
         attributes[kSecValueData as String] = item
         attributes[kSecAttrAccount as String] = key
-        
+        if let accessible = self.accessible {
+            attributes[kSecAttrAccessible as String] = accessible
+        }
+
         let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
         guard status != errSecItemNotFound else { throw SecureKeyChainItemError.itemNotFound }
         guard status == errSecSuccess else { throw SecureKeyChainItemError.unhandledError(status: status)}
@@ -115,8 +128,8 @@ public struct SecureKeyChainItem {
 public struct CodableSecureStorage<Key : RawRepresentable<String>, Type : Codable> {
     private var keyChainItem : SecureKeyChainItem
     
-    public init(key : Key, service : String, accessGroup : String? = nil){
-        self.keyChainItem = SecureKeyChainItem(key: key.rawValue, service: service, accessGroup: accessGroup)
+    public init(key : Key, service : String, accessGroup : String? = nil, accessible : CFString? = nil){
+        self.keyChainItem = SecureKeyChainItem(key: key.rawValue, service: service, accessGroup: accessGroup, accessible: accessible)
     }
     
     public var wrappedValue : Type? {
